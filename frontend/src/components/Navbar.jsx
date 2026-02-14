@@ -52,22 +52,22 @@ export default function Navbar({ notificationBarHeight = 0 }) {
   };
 
   return (
-    <nav className="fixed left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/5" style={{ top: notificationBarHeight }} data-testid="navbar">
+    <nav className="fixed left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-white/10" style={{ top: notificationBarHeight }} data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center" data-testid="nav-logo">
-            <img src={LOGO_URL} alt="GSN" className="h-8 w-auto" />
+            <img src={LOGO_URL} alt="GSN" className="h-9 w-auto" />
           </Link>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center space-x-6">
+          {/* Desktop Nav Links - Centered */}
+          <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
                 data-testid={`nav-link-${link.label.toLowerCase().replace(' ', '-')}`}
-                className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                className={`text-sm font-medium transition-colors flex items-center gap-2 ${
                   link.highlight 
                     ? 'text-gold-500 hover:text-gold-400' 
                     : isActive(link.href) 
