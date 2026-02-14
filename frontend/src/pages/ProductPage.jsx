@@ -538,23 +538,54 @@ See invoice: ${invoiceUrl}`;
                   </div>
                   
                   {customer ? (
-                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                    <div className="bg-zinc-800/50 rounded-lg p-3 space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-white text-sm">Available: <span className="text-green-500 font-semibold">Rs {creditBalance.toLocaleString()}</span></p>
-                          {useCredits && creditsToUse > 0 && (
-                            <p className="text-green-400 text-xs mt-1">Using Rs {creditsToUse.toFixed(2)} credits</p>
-                          )}
                         </div>
                         <Switch
                           checked={useCredits}
-                          onCheckedChange={setUseCredits}
+                          onCheckedChange={(checked) => {
+                            setUseCredits(checked);
+                            if (!checked) setCustomCreditAmount('');
+                          }}
                           disabled={creditBalance <= 0}
                           data-testid="use-credits-switch-product"
                         />
                       </div>
+                      
+                      {useCredits && creditBalance > 0 && (
+                        <div className="space-y-2 pt-2 border-t border-zinc-700">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              max={Math.min(creditBalance, totalBeforeCredits)}
+                              step="1"
+                              placeholder={`Max: Rs ${Math.min(creditBalance, totalBeforeCredits).toFixed(0)}`}
+                              value={customCreditAmount}
+                              onChange={(e) => setCustomCreditAmount(e.target.value)}
+                              className="bg-black border-zinc-700 flex-1 text-sm"
+                              data-testid="custom-credit-input-product"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCustomCreditAmount(Math.min(creditBalance, totalBeforeCredits).toFixed(0))}
+                              className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black text-xs whitespace-nowrap"
+                            >
+                              Use All
+                            </Button>
+                          </div>
+                          <p className="text-green-400 text-xs">
+                            Using: Rs {creditsToUse.toFixed(2)} credits
+                          </p>
+                        </div>
+                      )}
+                      
                       {creditBalance <= 0 && (
-                        <p className="text-gray-500 text-xs mt-2">No credits available. Earn credits by making purchases!</p>
+                        <p className="text-gray-500 text-xs">No credits available. Earn credits by making purchases!</p>
                       )}
                     </div>
                   ) : (
