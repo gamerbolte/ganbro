@@ -170,10 +170,15 @@ export default function Navbar({ notificationBarHeight = 0 }) {
                   key={link.href}
                   to={link.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`text-sm font-medium py-2 ${
-                    isActive(link.href) ? 'text-gold-500' : 'text-white/70'
+                  className={`text-sm font-medium py-2 flex items-center gap-2 ${
+                    link.highlight 
+                      ? 'text-gold-500' 
+                      : isActive(link.href) 
+                        ? 'text-gold-500' 
+                        : 'text-white/70'
                   }`}
                 >
+                  {link.icon && <link.icon className="w-4 h-4" />}
                   {link.label}
                 </Link>
               ))}
