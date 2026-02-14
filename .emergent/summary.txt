@@ -1,0 +1,156 @@
+<analysis>**original_problem_statement:**
+The user requested a 1:1 clone of the GitHub repository located at . The user provided an ImgBB API key and SMTP credentials for Gmail.
+
+Subsequently, the user requested the following features and fixes:
+1.  **Daily Login Reward System:** A feature for logged-in users to claim daily credits, with the amount set by an admin. The daily reset occurs at 12 AM Nepali time. A Daily Reward tab was requested in the main navigation.
+2.  **Navbar UI Cleanup:** Remove the Blog section, reorder the links to Home, Daily Rewards, About, and improve the spacing.
+3.  **Credit Deduction Bug:** Fix an issue where store credits were not being deducted from a user's balance after an order was confirmed.
+4.  **Partial Credit Usage:** Enhance the checkout process to allow users to input a specific amount of credit to use, rather than only having an use all credits option.
+5.  **New Features:**
+    *   **Referral Program:** Allow users to earn credits by inviting friends with unique referral codes.
+    *   **Points Multiplier Events:** An admin-configurable feature to set a time period and multiplier for earning extra credits (e.g., double credits on weekends).
+
+**User's preferred language**: English
+
+**what currently exists?**
+The agent has successfully cloned the  repository, which is a full-stack e-commerce application (GameShop Nepal) built with React, FastAPI, and MongoDB. The application is running, and the provided API keys have been configured. The agent has already implemented the Daily Login Reward system, fixed the credit deduction bug, implemented the partial credit usage feature, and restyled the navbar as requested.
+
+**Last working item**:
+*   **Last item agent was working:** Implementing the Referral Program and Points Multiplier Events. The agent created the necessary backend endpoints for managing referral settings, applying referral codes, and managing multiplier events. It also created the frontend admin pages for these features (, ) and began updating the user-facing  to show active multipliers and include a referral section.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** both
+*   **User Testing Done:** N
+
+**In progress Task List**:
+*   **Task 1:** Complete Referral Program & Points Multiplier Events implementation (Priority: P0)
+
+**Task Detail:**
+*   **Task 1:**
+    *   **Where to resume:** The agent has created the admin pages (, ) and started modifying . The next steps are:
+        1.  Add routes for the new admin pages in .
+        2.  Add navigation links for these pages in the admin sidebar component ().
+        3.  Complete the UI and logic on  to allow users to see their referral code and enter a code from a friend.
+        4.  Ensure the daily reward claim logic correctly applies any active multipliers.
+        5.  Thoroughly test the entire referral and multiplier flow from both the user and admin perspectives.
+    *   **What will be achieved with this?** The application will have a fully functional referral system and a points multiplier event system, enhancing user engagement and rewards.
+    *   **Status:** IN PROGRESS
+    *   **Should Test frontend/backend/both after fix?** both
+    *   **Blocked on something:** None
+
+**Upcoming and Future Tasks**
+*   **Upcoming Tasks:**
+    *   None selected by the user.
+
+*   **Future Tasks:**
+    *   The agent suggested a list of potential features. The user might be interested in these later:
+        *   **Engagement:** Spin the Wheel, Achievement Badges.
+        *   **Shopping Experience:** Product Filters, Sort Options, Recently Viewed, Quick View.
+        *   **Customer Features:** Order History Page, Saved Payment Methods, Live Chat.
+        *   **Admin Improvements:** Sales Dashboard, Low Stock Alerts, Customer Analytics.
+
+**Completed work in this session**
+*   **Repository Clone:** Successfully cloned the  repository and deployed the application.
+*   **Daily Login Reward System:** Implemented backend endpoints () and a frontend page () for users to claim daily rewards. Also created an admin page () to manage settings.
+*   **Credit Deduction Bug Fix:** Resolved the issue where store credits were not being deducted after order confirmation. The fix involved ensuring  and the  flag were correctly handled in the order confirmation logic in .
+*   **Partial Credit Usage:** Modified the checkout and product pages (, ) to include an input field allowing users to specify the amount of credit they want to use.
+*   **Navbar UI Update:** Removed the Blog link, reordered navigation to Home, Daily Rewards, About, and adjusted spacing in .
+
+**Earlier issues found/mentioned but not fixed**
+*   None.
+
+**Known issue recurrence from previous fork**
+*   No previous fork summary available.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+*   **Frontend:** React, Tailwind CSS, shadcn/ui components, React Router, Axios.
+*   **Backend:** FastAPI, Pydantic, Motor (async MongoDB driver).
+*   **Database:** MongoDB.
+*   **Architecture:** Full-stack monolithic repository with a React single-page application and a FastAPI backend server.
+
+**key DB schema**
+*   **customers:** {email, name, phone, password, credit_balance, referral_code, referred_by, ...}
+*   **orders:** {id, customer_email, items, total_amount, credits_used, credits_pending, status, ...}
+*   **products:** {name, price, stock, description, ...}
+*   **daily_reward_settings:** {id, is_enabled, reward_amount, ...}
+*   **daily_reward_claims:** {customer_email, claim_date, ...}
+*   **store_credit_logs:** {customer_email, amount, reason, ...}
+*   **referral_settings:** {is_enabled, reward_amount_referrer, reward_amount_referee, ...}
+*   **multiplier_events:** {name, start_time, end_time, multiplier, is_active, ...}
+
+**changes in tech stack**
+*   None.
+
+**All files of reference**
+*   **/app/backend/server.py:** Modified to add endpoints for daily rewards, referrals, and multipliers, and to fix the credit deduction bug.
+*   **/app/frontend/src/App.js:** Modified to add new routes for the daily reward page and admin panels.
+*   **/app/frontend/src/components/Navbar.jsx:** Modified for UI layout and link changes.
+*   **/app/frontend/src/pages/DailyRewardPage.jsx:** Created for the daily reward feature and modified to include referral information.
+*   **/app/frontend/src/pages/CheckoutPage.jsx:** Modified to allow partial credit usage.
+*   **/app/frontend/src/pages/ProductPage.jsx:** Modified to allow partial credit usage in the order dialog.
+*   **/app/frontend/src/pages/admin/AdminDailyReward.jsx:** Created for managing daily reward settings.
+*   **/app/frontend/src/pages/admin/AdminReferral.jsx:** Created for managing referral program settings.
+*   **/app/frontend/src/pages/admin/AdminMultiplier.jsx:** Created for managing points multiplier events.
+*   **/app/frontend/src/components/AdminLayout.jsx:** Modified to add links to new admin pages.
+
+**Areas that need refactoring**
+*   The backend logic is consolidated into a single large file, . This file is over 3700 lines long. For better maintainability, it should be refactored by splitting the routes and business logic into separate modules (e.g., , , ).
+
+**key api endpoints**
+*   **Daily Reward:**
+    *   
+    *   
+    *   
+    *   
+*   **Referral Program:**
+    *   
+    *   
+    *   
+*   **Multiplier Events:**
+    *   
+    *   
+    *   
+    *   
+*   **Orders & Credits:**
+    *   
+    *   
+
+**Critical Info for New Agent**
+*   The user is direct and prefers quick, efficient completion of tasks. The initial attempt to manually recreate the repository was not well-received; cloning was the correct action.
+*   All time-based logic, such as the daily reward reset, must use the Nepali Time Zone (). This is a critical business rule.
+*   The backend  is very large. Be careful with function placement to avoid used before definition errors. It's recommended to define helper functions at the top or in a dedicated section.
+
+**documents and test reports created in this job**
+*   None.
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** Asks what else can be done to improve the website.
+2.  **Agent:** Proposes a list of 20 features across different categories. (COMPLETED)
+3.  **User:** Selects two features: Referral Program and Points Multiplier Events. (IN PROGRESS)
+4.  **Agent:** Acknowledges the request and begins implementation. (IN PROGRESS)
+
+No pending user messages. The user is waiting for the agent to complete the implementation of the requested features.
+
+**Project Health Check:**
+*   **Broken:** None.
+*   **Mocked:** None.
+
+**3rd Party Integrations**
+*   **ImgBB:** Used for image hosting. Requires a User API Key ().
+*   **SMTP (Gmail):** Used for sending emails. Requires User credentials ( / App Password).
+*   **Google Sheets:** An integration () exists in the backend code, likely for order syncing. Configuration details are not visible.
+
+**Testing status**
+*   **Testing agent used after significant changes:** NO
+*   **Troubleshoot agent used after agent stuck in loop:** NO
+*   **Test files created:** []
+*   **Known regressions:** []
+
+**Credentials to test flow:**
+No specific test credentials have been provided. The agent will need to use the application's registration feature to create a new user account for testing logged-in functionality.
+
+**What agent forgot to execute**
+*   While the agent created the admin pages for the Referral and Multiplier features (, ), it has not yet added the corresponding routes in  or the navigation links in the  sidebar. This is a pending step in the ongoing task.</analysis>
