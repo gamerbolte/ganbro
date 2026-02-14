@@ -3833,6 +3833,16 @@ async def get_referral_history(email: str):
             del ref["_id"]
     return referrals
 
+@api_router.get("/referrals/all")
+async def get_all_referrals(current_user: dict = Depends(get_current_user)):
+    """Get all referrals for admin panel"""
+    referrals = await db.referrals.find().sort("created_at", -1).to_list(100)
+    for ref in referrals:
+        ref["id"] = str(ref.get("_id", ref.get("id")))
+        if "_id" in ref:
+            del ref["_id"]
+    return referrals
+
 # ==================== POINTS MULTIPLIER EVENTS ====================
 
 class MultiplierEvent(BaseModel):
