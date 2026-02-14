@@ -54,11 +54,6 @@ export default function DailyRewardPage() {
       
       // Refresh status
       await fetchData();
-      
-      // Refresh customer balance
-      if (refreshCustomer) {
-        refreshCustomer();
-      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to claim reward');
     } finally {
