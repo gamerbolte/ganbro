@@ -41,11 +41,11 @@ export function FlashSaleTimer({ endTime, label = 'FLASH SALE' }) {
           <Zap className="w-5 h-5 text-yellow-300 animate-bounce" />
           <span className="text-white font-bold uppercase tracking-wider text-sm">{label}</span>
         </div>
-
+        
         <div className="flex items-center gap-1">
           <Clock className="w-4 h-4 text-white/80" />
           <span className="text-white/80 text-xs mr-2">Ends in:</span>
-
+          
           <div className="flex items-center gap-1">
             {timeLeft.days > 0 && (
               <>
@@ -74,6 +74,7 @@ function TimeBlock({ value, label }) {
   );
 }
 
+// Flash Sale Badge for product cards
 export function FlashSaleBadge({ endTime, small = false }) {
   const calculateTimeLeft = useCallback(() => {
     const end = new Date(endTime).getTime();
@@ -86,7 +87,7 @@ export function FlashSaleBadge({ endTime, small = false }) {
 
     const hours = Math.floor(difference / (1000 * 60 * 60));
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-
+    
     return {
       hours,
       minutes,
@@ -99,7 +100,7 @@ export function FlashSaleBadge({ endTime, small = false }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
-    }, 60000);
+    }, 60000); // Update every minute for badge
 
     return () => clearInterval(timer);
   }, [calculateTimeLeft]);
@@ -124,5 +125,16 @@ export function FlashSaleBadge({ endTime, small = false }) {
     </div>
   );
 }
+
+// CSS animation (add to App.css)
+export const flashSaleStyles = `
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.9; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+`;
 
 export default FlashSaleTimer;

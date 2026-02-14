@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Search, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -55,10 +55,12 @@ export default function Navbar({ notificationBarHeight = 0 }) {
     <nav className="fixed left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/5" style={{ top: notificationBarHeight }} data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
+          {/* Logo */}
           <Link to="/" className="flex items-center" data-testid="nav-logo">
             <img src={LOGO_URL} alt="GSN" className="h-8 w-auto" />
           </Link>
 
+          {/* Desktop Nav Links */}
           <div className="hidden md:flex items-center space-x-6">
             {navLinks.map((link) => (
               <Link
@@ -74,6 +76,7 @@ export default function Navbar({ notificationBarHeight = 0 }) {
             ))}
           </div>
 
+          {/* Desktop Right Actions */}
           <div className="hidden md:flex items-center gap-1">
             {isSearchOpen ? (
               <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -95,9 +98,9 @@ export default function Navbar({ notificationBarHeight = 0 }) {
                 <Search className="h-5 w-5" />
               </Button>
             )}
-
+            
             <CartSidebar />
-
+            
             {customer ? (
               <Button variant="ghost" size="sm" onClick={() => navigate('/account')} className="text-white/60 hover:text-white p-2" data-testid="customer-account-btn">
                 <User className="h-5 w-5" />
@@ -107,10 +110,11 @@ export default function Navbar({ notificationBarHeight = 0 }) {
                 <User className="h-5 w-5" />
               </Button>
             )}
-
+            
             <CustomerAccountSidebar />
           </div>
 
+          {/* Mobile Right Actions */}
           <div className="md:hidden flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => setIsSearchOpen(!isSearchOpen)} className="text-white/60 hover:text-white p-2">
               <Search className="h-5 w-5" />
@@ -132,6 +136,7 @@ export default function Navbar({ notificationBarHeight = 0 }) {
           </div>
         </div>
 
+        {/* Mobile Search */}
         {isSearchOpen && (
           <div className="md:hidden py-3 border-t border-white/5">
             <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -150,6 +155,7 @@ export default function Navbar({ notificationBarHeight = 0 }) {
           </div>
         )}
 
+        {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-white/5" data-testid="mobile-menu">
             <div className="flex flex-col space-y-3">
@@ -170,8 +176,8 @@ export default function Navbar({ notificationBarHeight = 0 }) {
         )}
       </div>
 
-      <CustomerAuthModal
-        isOpen={showAuthModal}
+      <CustomerAuthModal 
+        isOpen={showAuthModal} 
         onClose={() => setShowAuthModal(false)}
         onSuccess={(customerData) => setCustomer(customerData)}
       />

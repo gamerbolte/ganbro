@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function CustomerAuthModal({ isOpen, onClose, onSuccess }) {
-  const [step, setStep] = useState('email');
+  const [step, setStep] = useState('email'); // 'email' or 'otp'
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -35,7 +35,8 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }) {
         name: name || email.split('@')[0],
         whatsapp_number: whatsappNumber
       });
-
+      
+      // Check if debug mode returned OTP
       if (response.data.otp) {
         toast.success(`OTP sent! Debug mode: ${response.data.otp}`, { duration: 10000 });
       } else {
@@ -62,14 +63,16 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }) {
         email: email.toLowerCase().trim(),
         otp: otp
       });
-
+      
+      // Store token and customer info
       localStorage.setItem('customer_token', response.data.token);
       localStorage.setItem('customer_info', JSON.stringify(response.data.customer));
-
-      toast.success('Login successful! Welcome back');
+      
+      toast.success('Login successful! Welcome back 🎉');
       onSuccess && onSuccess(response.data.customer);
       onClose();
-
+      
+      // Reset form
       setEmail('');
       setName('');
       setOtp('');
@@ -105,7 +108,7 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }) {
             {step === 'email' ? 'Login / Sign Up' : 'Enter OTP'}
           </DialogTitle>
           <DialogDescription className="text-white/60">
-            {step === 'email'
+            {step === 'email' 
               ? 'Get instant access to your order history and wishlist'
               : (
                 <p>We've sent a 6-digit code to your email address: <span className="text-gold-500 font-semibold">{email}</span></p>
@@ -128,7 +131,7 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }) {
                 data-testid="customer-name-input"
               />
             </div>
-
+            
             <div>
               <Label htmlFor="email" className="text-white">Email Address *</Label>
               <div className="relative">
@@ -236,7 +239,7 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }) {
                 }}
                 className="text-white/60 hover:text-gold-500"
               >
-                &larr; Change Email
+                ← Change Email
               </button>
               <button
                 type="button"
@@ -254,6 +257,7 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }) {
   );
 }
 
+// Hook to check if customer is logged in
 export function useCustomerAuth() {
   const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -261,7 +265,7 @@ export function useCustomerAuth() {
   useEffect(() => {
     const token = localStorage.getItem('customer_token');
     const customerInfo = localStorage.getItem('customer_info');
-
+    
     if (token && customerInfo) {
       try {
         setCustomer(JSON.parse(customerInfo));

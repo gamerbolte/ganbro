@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, MessageCircle, Send, Loader2 } from 'lucide-react';
 import { socialLinksAPI } from '@/lib/api';
@@ -63,10 +63,12 @@ export default function Footer() {
     return null;
   };
 
+  // socialLinks is now an array directly
   const socialLinksArray = socialLinks.filter(link => link.url && link.platform);
 
   return (
     <footer className="bg-black border-t border-white/10" data-testid="footer">
+      {/* Newsletter Section */}
       <div className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
@@ -87,8 +89,8 @@ export default function Footer() {
                 className="bg-white/5 border-white/20 text-white placeholder:text-white/40 w-full md:w-72"
                 data-testid="newsletter-email-input"
               />
-              <Button
-                type="submit"
+              <Button 
+                type="submit" 
                 disabled={isSubscribing}
                 className="bg-gold-500 hover:bg-gold-600 text-black font-semibold px-6"
                 data-testid="newsletter-subscribe-btn"
@@ -142,9 +144,9 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 lg:mt-12 pt-6 lg:pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-white/40 text-xs lg:text-sm text-center sm:text-left">&copy; {new Date().getFullYear()} GameShop Nepal. All rights reserved.</p>
+          <p className="text-white/40 text-xs lg:text-sm text-center sm:text-left">© {new Date().getFullYear()} GameShop Nepal. All rights reserved.</p>
           <a href="https://www.trustpilot.com/review/gameshopnepal.com" target="_blank" rel="noopener noreferrer" className="text-gold-500 hover:text-gold-400 text-xs lg:text-sm flex items-center" data-testid="footer-trustpilot-link">
-            View reviews on Trustpilot &rarr;
+            View reviews on Trustpilot →
           </a>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Heart, X, Bell, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { wishlistAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
+// Generate or get visitor ID
 const getVisitorId = () => {
   let visitorId = localStorage.getItem('gsn_visitor_id');
   if (!visitorId) {
@@ -16,6 +17,7 @@ const getVisitorId = () => {
   return visitorId;
 };
 
+// Wishlist Context
 const WishlistContext = createContext();
 
 export const useWishlist = () => useContext(WishlistContext);
@@ -69,8 +71,8 @@ export function WishlistProvider({ children }) {
   };
 
   const isInWishlist = (productId, variationId = null) => {
-    return wishlist.some(item =>
-      item.product_id === productId &&
+    return wishlist.some(item => 
+      item.product_id === productId && 
       (variationId ? item.variation_id === variationId : true)
     );
   };
@@ -99,10 +101,11 @@ export function WishlistProvider({ children }) {
   );
 }
 
+// Wishlist Button Component (for product cards/pages)
 export function WishlistButton({ productId, variationId = null, size = 'default' }) {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [loading, setLoading] = useState(false);
-
+  
   const inWishlist = isInWishlist(productId, variationId);
 
   const handleClick = async (e) => {
@@ -113,8 +116,8 @@ export function WishlistButton({ productId, variationId = null, size = 'default'
     setLoading(false);
   };
 
-  const sizeClasses = size === 'sm'
-    ? 'w-8 h-8'
+  const sizeClasses = size === 'sm' 
+    ? 'w-8 h-8' 
     : 'w-10 h-10';
 
   return (
@@ -122,8 +125,8 @@ export function WishlistButton({ productId, variationId = null, size = 'default'
       onClick={handleClick}
       disabled={loading}
       className={`${sizeClasses} rounded-full flex items-center justify-center transition-all ${
-        inWishlist
-          ? 'bg-red-500 text-white'
+        inWishlist 
+          ? 'bg-red-500 text-white' 
           : 'bg-black/50 text-white hover:bg-red-500/20 hover:text-red-400'
       }`}
       data-testid={`wishlist-btn-${productId}`}
@@ -133,6 +136,7 @@ export function WishlistButton({ productId, variationId = null, size = 'default'
   );
 }
 
+// Wishlist Sidebar Component
 export function WishlistSidebar() {
   const { wishlist, removeFromWishlist, visitorId } = useWishlist();
   const [email, setEmail] = useState('');
@@ -141,7 +145,7 @@ export function WishlistSidebar() {
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     if (!email) return;
-
+    
     setEmailSubmitting(true);
     try {
       await wishlistAPI.updateEmail(visitorId, email);
@@ -157,9 +161,9 @@ export function WishlistSidebar() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
+        <Button 
+          variant="ghost" 
+          size="icon" 
           className="relative text-white hover:text-amber-500"
           data-testid="wishlist-trigger"
         >
@@ -189,14 +193,14 @@ export function WishlistSidebar() {
             wishlist.map((item) => (
               <div key={item.id} className="flex gap-3 p-3 bg-zinc-800 rounded-lg">
                 {item.product?.image_url && (
-                  <img
-                    src={item.product.image_url}
+                  <img 
+                    src={item.product.image_url} 
                     alt={item.product?.name}
                     className="w-16 h-16 object-cover rounded"
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <Link
+                  <Link 
                     to={`/product/${item.product?.slug || item.product_id}`}
                     className="text-white font-medium hover:text-amber-500 truncate block"
                   >
@@ -237,8 +241,8 @@ export function WishlistSidebar() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 bg-zinc-800 border-zinc-700"
               />
-              <Button
-                type="submit"
+              <Button 
+                type="submit" 
                 disabled={emailSubmitting}
                 className="bg-amber-500 hover:bg-amber-600 text-black"
               >

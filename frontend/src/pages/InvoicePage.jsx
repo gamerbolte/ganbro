@@ -32,10 +32,14 @@ export default function InvoicePage() {
     window.print();
   };
 
+  const handleDownload = () => {
+    window.print();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-amber-500" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -44,10 +48,12 @@ export default function InvoicePage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <Package className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+          <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-heading font-bold text-white mb-2">Invoice Not Found</h1>
-          <p className="text-gray-400 mb-6">The invoice you're looking for doesn't exist.</p>
-          <Link to="/"><Button variant="outline">Return to Home</Button></Link>
+          <p className="text-muted-foreground mb-6">The invoice you're looking for doesn't exist.</p>
+          <Link to="/">
+            <Button variant="outline">Return to Home</Button>
+          </Link>
         </div>
       </div>
     );
@@ -62,10 +68,10 @@ export default function InvoicePage() {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'completed': return 'text-green-500';
-      case 'confirmed': return 'text-amber-500';
+      case 'confirmed': return 'text-primary';
       case 'pending': return 'text-yellow-500';
       case 'cancelled': return 'text-red-500';
-      default: return 'text-gray-400';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -79,68 +85,85 @@ export default function InvoicePage() {
 
   return (
     <div className="min-h-screen bg-black py-8 print:py-0">
+      {/* Header Actions - Hidden on Print */}
       <div className="max-w-4xl mx-auto px-4 mb-6 print:hidden">
         <div className="flex justify-between items-center">
-          <Link to="/"><Button variant="ghost" className="text-white hover:text-amber-500">← Back to Home</Button></Link>
+          <Link to="/">
+            <Button variant="ghost" className="text-white hover:text-primary">
+              ← Back to Home
+            </Button>
+          </Link>
           <div className="flex gap-2">
-            <Button onClick={handlePrint} variant="outline" className="bg-zinc-800 border-white/10"><Download className="h-4 w-4 mr-2" />Download PDF</Button>
-            <Button onClick={handlePrint} className="bg-amber-500 text-black hover:bg-amber-600">Print Invoice</Button>
+            <Button onClick={handleDownload} variant="outline" className="bg-secondary border-white/10">
+              <Download className="h-4 w-4 mr-2" />
+              Download PDF
+            </Button>
+            <Button onClick={handlePrint} className="bg-primary text-black hover:bg-primary/90">
+              Print Invoice
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto bg-zinc-900 border border-white/10 print:border-0 print:shadow-none rounded-lg overflow-hidden" id="invoice">
-        <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border-b border-white/10 px-8 py-8">
+      {/* Invoice Container */}
+      <div className="max-w-4xl mx-auto bg-card border border-white/10 print:border-0 print:shadow-none rounded-lg overflow-hidden" id="invoice">
+        
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border-b border-white/10 px-8 py-8">
           <div className="flex justify-between items-start">
             <div>
               <img src={LOGO_URL} alt="GameShop Nepal" className="h-12 mb-3" />
               <h1 className="text-3xl font-heading font-bold text-white mb-1">INVOICE</h1>
-              <p className="text-gray-400">Digital Products Marketplace</p>
+              <p className="text-muted-foreground">Digital Products Marketplace</p>
             </div>
             <div className="text-right">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 border ${order.status === 'Completed' ? 'border-green-500/50' : 'border-amber-500/50'} mb-3`}>
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 border ${order.status === 'Completed' ? 'border-green-500/50' : 'border-primary/50'} mb-3`}>
                 {getStatusIcon(order.status)}
-                <span className={`font-semibold ${getStatusColor(order.status)}`}>{order.status || 'Pending'}</span>
+                <span className={`font-semibold ${getStatusColor(order.status)}`}>
+                  {order.status || 'Pending'}
+                </span>
               </div>
-              <p className="text-sm text-gray-400">Invoice #</p>
+              <p className="text-sm text-muted-foreground">Invoice #</p>
               <p className="text-lg font-bold text-white font-mono">{order.id?.substring(0, 12).toUpperCase()}</p>
             </div>
           </div>
         </div>
 
+        {/* Company & Customer Info */}
         <div className="grid md:grid-cols-2 gap-8 px-8 py-8 bg-black/20">
           <div>
-            <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider mb-3">From</h3>
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">From</h3>
             <div className="text-white">
               <p className="font-bold text-lg mb-1">GameShop Nepal</p>
-              <p className="text-gray-400 text-sm">Kathmandu, Nepal</p>
-              <p className="text-gray-400 text-sm">support@gameshopnepal.com</p>
-              <p className="text-gray-400 text-sm">+977 9743488871</p>
+              <p className="text-muted-foreground text-sm">Kathmandu, Nepal</p>
+              <p className="text-muted-foreground text-sm">support@gameshopnepal.com</p>
+              <p className="text-muted-foreground text-sm">+977 9743488871</p>
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider mb-3">Bill To</h3>
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Bill To</h3>
             <div className="text-white">
               <p className="font-bold text-lg mb-1">{order.customer_name || 'Customer'}</p>
-              <p className="text-gray-400 text-sm">{order.customer_email || 'N/A'}</p>
-              <p className="text-gray-400 text-sm">{order.customer_phone || 'N/A'}</p>
-              <p className="text-gray-400 text-sm mt-3">
+              <p className="text-muted-foreground text-sm">{order.customer_email || 'N/A'}</p>
+              <p className="text-muted-foreground text-sm">{order.customer_phone || 'N/A'}</p>
+              <p className="text-muted-foreground text-sm mt-3">
                 <span className="text-white font-semibold">Date:</span> {new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
           </div>
         </div>
 
+        {/* Items Table */}
         <div className="px-8 py-6">
-          <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider mb-4">Order Items</h3>
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Order Items</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">Item</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">Qty</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">Price</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">Total</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Item</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Qty</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Price</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,7 +171,9 @@ export default function InvoicePage() {
                   <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                     <td className="py-4 px-4">
                       <p className="font-semibold text-white">{item.name}</p>
-                      {item.variation && <p className="text-sm text-gray-400">{item.variation}</p>}
+                      {item.variation && (
+                        <p className="text-sm text-muted-foreground">{item.variation}</p>
+                      )}
                     </td>
                     <td className="text-center py-4 px-4 text-white">{item.quantity}</td>
                     <td className="text-right py-4 px-4 text-white">Rs {Math.round(item.price || 0).toLocaleString()}</td>
@@ -160,36 +185,64 @@ export default function InvoicePage() {
           </div>
         </div>
 
+        {/* Totals Section */}
         <div className="px-8 py-6 bg-black/20 border-t border-white/10">
           <div className="max-w-md ml-auto">
             <div className="space-y-3">
-              <div className="flex justify-between text-gray-400"><span>Subtotal</span><span>Rs {Math.round(subtotal).toLocaleString()}</span></div>
-              {serviceCharge > 0 && <div className="flex justify-between text-gray-400"><span>Service Charge</span><span>Rs {Math.round(serviceCharge).toLocaleString()}</span></div>}
-              {tax > 0 && <div className="flex justify-between text-gray-400"><span>Tax</span><span>Rs {Math.round(tax).toLocaleString()}</span></div>}
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span>Rs {Math.round(subtotal).toLocaleString()}</span>
+              </div>
+              {serviceCharge > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Service Charge</span>
+                  <span>Rs {Math.round(serviceCharge).toLocaleString()}</span>
+                </div>
+              )}
+              {tax > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Tax</span>
+                  <span>Rs {Math.round(tax).toLocaleString()}</span>
+                </div>
+              )}
               <div className="h-px bg-white/10 my-3"></div>
               <div className="flex justify-between items-center">
                 <span className="text-xl font-heading font-bold text-white">Total Amount</span>
-                <span className="text-2xl font-heading font-bold text-amber-500">Rs {Math.round(total).toLocaleString()}</span>
+                <span className="text-2xl font-heading font-bold text-primary">Rs {Math.round(total).toLocaleString()}</span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Footer */}
         <div className="px-8 py-6 bg-gradient-to-b from-transparent to-black/20 border-t border-white/5">
           <div className="text-center space-y-2">
-            <p className="text-sm text-gray-400">Thank you for your business!</p>
-            <p className="text-xs text-gray-500">For any queries, contact us at <span className="text-amber-500">support@gameshopnepal.com</span></p>
-            <p className="text-xs text-gray-500 mt-4">This is a computer-generated invoice. No signature required.</p>
+            <p className="text-sm text-muted-foreground">Thank you for your business!</p>
+            <p className="text-xs text-muted-foreground">
+              For any queries, contact us at <span className="text-primary">support@gameshopnepal.com</span>
+            </p>
+            <p className="text-xs text-muted-foreground mt-4">
+              This is a computer-generated invoice. No signature required.
+            </p>
           </div>
         </div>
       </div>
 
+      {/* Print Styles */}
       <style>{`
         @media print {
-          body { background: white !important; }
-          .print\\:hidden { display: none !important; }
-          .print\\:border-0 { border: 0 !important; }
-          .print\\:shadow-none { box-shadow: none !important; }
+          body {
+            background: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .print\\:border-0 {
+            border: 0 !important;
+          }
+          .print\\:shadow-none {
+            box-shadow: none !important;
+          }
         }
       `}</style>
     </div>

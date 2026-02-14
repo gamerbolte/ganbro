@@ -21,21 +21,25 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, removeFromCart, clearCart, getCartTotal } = useCart();
   const { customer } = useCustomer();
-
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderForm, setOrderForm] = useState({ customer_name: '', customer_phone: '', customer_email: '', remark: '' });
-
+  
+  // Promo code
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
-
+  
+  // Pricing settings
   const [pricingSettings, setPricingSettings] = useState({ service_charge: 0, tax_percentage: 0, tax_label: 'Tax' });
 
+  // Store Credits
   const [creditBalance, setCreditBalance] = useState(0);
   const [useCredits, setUseCredits] = useState(false);
   const [creditSettings, setCreditSettings] = useState({ cashback_percentage: 5, is_enabled: true });
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  // Auto-fill form for logged-in users
   useEffect(() => {
     if (customer) {
       setOrderForm(prev => ({
@@ -44,6 +48,7 @@ export default function CheckoutPage() {
         customer_email: customer.email || '',
         customer_phone: customer.whatsapp_number || customer.phone || ''
       }));
+      // Fetch credit balance
       fetchCreditBalance(customer.email);
     }
   }, [customer]);
@@ -61,7 +66,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const [pricingRes, creditRes] = await Promise.all([settingsAPI.get(), creditsAPI.getSettings()]);
+        const [pricingRes, creditRes] = await Promise.all([
+          settingsAPI.get(),
+          creditsAPI.getSettings()
+        ]);
         setPricingSettings(pricingRes.data);
         setCreditSettings(creditRes.data);
       } catch (e) {
@@ -78,6 +86,8 @@ export default function CheckoutPage() {
   const taxPercentage = parseFloat(pricingSettings.tax_percentage) || 0;
   const taxAmount = afterDiscount * (taxPercentage / 100);
   const totalBeforeCredits = afterDiscount + serviceCharge + taxAmount;
+  
+  // Calculate credits to use (max available or total, whichever is lower)
   const creditsToUse = useCredits && customer ? Math.min(creditBalance, totalBeforeCredits) : 0;
   const total = Math.max(0, totalBeforeCredits - creditsToUse);
 
@@ -112,8 +122,12 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     try {
       let fullRemark = '';
-      if (promoDiscount) fullRemark += `Promo Code: ${promoDiscount.code} (-Rs ${promoDiscount.discount_amount})\n`;
-      if (creditsToUse > 0) fullRemark += `Store Credits Used: Rs ${creditsToUse}\n`;
+      if (promoDiscount) {
+        fullRemark += `Promo Code: ${promoDiscount.code} (-Rs ${promoDiscount.discount_amount})\n`;
+      }
+      if (creditsToUse > 0) {
+        fullRemark += `Store Credits Used: Rs ${creditsToUse}\n`;
+      }
       if (orderForm.remark) fullRemark += `Notes: ${orderForm.remark}`;
 
       const orderPayload = {
@@ -135,15 +149,44 @@ export default function CheckoutPage() {
 
       const res = await ordersAPI.create(orderPayload);
       const orderId = res.data.order_id;
-
+      
+      // If total is 0 (fully paid with credits), redirect to WhatsApp directly
       if (total === 0 && creditsToUse > 0) {
+        const itemsText = cart.map(item => `${item.quantity}x ${item.product.name} (${item.variation.name})`).join('\n');
+        const siteUrl = window.location.origin;
+        const invoiceUrl = `${siteUrl}/invoice/${orderId}`;
+        
+        const whatsappMessage = `*#${orderId.slice(0, 8).toUpperCase()}*
+
+${itemsText}
+
+Subtotal: Rs ${subtotal.toLocaleString()}
+Store Credits Used: Rs ${creditsToUse.toLocaleString()}
+*Total: Rs 0 (Paid with Credits)*
+
+Customer: *${orderForm.customer_name}* ${orderForm.customer_phone} ${orderForm.customer_email || ''}
+
+Payment: *Store Credits* (Full Payment)
+
+See invoice: ${invoiceUrl}`;
+
+        const encodedMessage = encodeURIComponent(whatsappMessage);
+        const whatsappNumber = '9779743488871';
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+        
         clearCart();
-        toast.success('Order placed with store credits!');
-        navigate(`/invoice/${orderId}`);
+        toast.success('Order placed with store credits! Opening WhatsApp...');
+        
+        setTimeout(() => {
+          window.location.href = whatsappUrl;
+        }, 500);
         return;
       }
-
+      
+      // Get first item details for payment page
       const firstItem = cart[0];
+      
+      // Redirect to our custom payment page with all required data
       const params = new URLSearchParams({
         total: total.toFixed(2),
         items: cart.map(item => `${item.product.name} (${item.variation.name} x${item.quantity})`).join(', '),
@@ -153,9 +196,10 @@ export default function CheckoutPage() {
         product: firstItem?.product?.name || 'Order',
         variation: firstItem?.variation?.name || '',
         price: firstItem?.variation?.price?.toString() || '0',
-        qty: cart.reduce((sum, item) => sum + item.quantity, 0).toString()
+        qty: cart.reduce((sum, item) => sum + item.quantity, 0).toString(),
+        credits_used: creditsToUse.toString()
       });
-
+      
       clearCart();
       navigate(`/payment/${res.data.order_id}?${params.toString()}`);
     } catch (error) {
@@ -166,6 +210,10 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleOpenPayment = () => {
+    // Removed - we now redirect to /payment/:orderId
+  };
+
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-black">
@@ -174,7 +222,9 @@ export default function CheckoutPage() {
           <ShoppingBag className="w-16 h-16 text-gray-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">{t('cartEmpty')}</h1>
           <p className="text-gray-400 mb-6">{t('addProductsToStart')}</p>
-          <Link to="/"><Button className="bg-amber-500 hover:bg-amber-600 text-black">{t('browseProducts')}</Button></Link>
+          <Link to="/">
+            <Button className="bg-amber-500 hover:bg-amber-600 text-black">{t('browseProducts')}</Button>
+          </Link>
         </div>
         <Footer />
       </div>
@@ -189,10 +239,11 @@ export default function CheckoutPage() {
           <Link to="/" className="inline-flex items-center text-gray-400 hover:text-amber-500 mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />{t('backToProducts')}
           </Link>
-
+          
           <h1 className="text-2xl font-bold text-white mb-6">Checkout ({cart.length} items)</h1>
-
+          
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Cart Items */}
             <div className="lg:col-span-3 space-y-4">
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
                 <h2 className="text-white font-semibold mb-4">Your Items</h2>
@@ -213,11 +264,12 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </div>
-
+            
+            {/* Order Form */}
             <div className="lg:col-span-2">
               <form onSubmit={handleSubmitOrder} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4 sticky top-24">
                 <h2 className="text-white font-semibold">Your Details</h2>
-
+                
                 {customer ? (
                   <div className="bg-zinc-800/50 rounded-lg p-3 space-y-2">
                     <p className="text-gray-400 text-xs mb-2">Logged in as:</p>
@@ -229,15 +281,15 @@ export default function CheckoutPage() {
                   <>
                     <div>
                       <Label className="text-gray-400 text-sm">{t('fullName')} *</Label>
-                      <Input value={orderForm.customer_name} onChange={e => setOrderForm({...orderForm, customer_name: e.target.value})} className="bg-black border-zinc-700 mt-1" required />
+                      <Input value={orderForm.customer_name} onChange={e => setOrderForm({...orderForm, customer_name: e.target.value})} className="bg-black border-zinc-700 mt-1" required data-testid="checkout-name-input" />
                     </div>
                     <div>
                       <Label className="text-gray-400 text-sm">{t('phoneNumber')} *</Label>
-                      <Input value={orderForm.customer_phone} onChange={e => setOrderForm({...orderForm, customer_phone: e.target.value})} className="bg-black border-zinc-700 mt-1" required />
+                      <Input value={orderForm.customer_phone} onChange={e => setOrderForm({...orderForm, customer_phone: e.target.value})} className="bg-black border-zinc-700 mt-1" required data-testid="checkout-phone-input" />
                     </div>
                     <div>
                       <Label className="text-gray-400 text-sm">{t('email')}</Label>
-                      <Input type="email" value={orderForm.customer_email} onChange={e => setOrderForm({...orderForm, customer_email: e.target.value})} className="bg-black border-zinc-700 mt-1" />
+                      <Input type="email" value={orderForm.customer_email} onChange={e => setOrderForm({...orderForm, customer_email: e.target.value})} className="bg-black border-zinc-700 mt-1" data-testid="checkout-email-input" />
                     </div>
                   </>
                 )}
@@ -245,37 +297,68 @@ export default function CheckoutPage() {
                   <Label className="text-gray-400 text-sm">{t('notes')}</Label>
                   <Textarea value={orderForm.remark} onChange={e => setOrderForm({...orderForm, remark: e.target.value})} className="bg-black border-zinc-700 mt-1" rows={2} />
                 </div>
-
+                
+                {/* Store Credits Section */}
                 {creditSettings.is_enabled && (
                   <div className="pt-3 border-t border-zinc-800">
                     <div className="flex items-center justify-between mb-2">
                       <Label className="text-gray-400 text-sm flex items-center gap-2">
                         <Coins className="w-4 h-4 text-green-500" /> Use Store Credits
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="w-3 h-3 text-gray-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-zinc-800 border-zinc-700 text-white max-w-xs">
+                              <p className="text-sm">
+                                <span className="font-semibold text-amber-500">How to earn credits:</span><br/>
+                                Purchase products and get {creditSettings.cashback_percentage}% cashback as store credits when your order is completed!
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </Label>
                     </div>
-
+                    
                     {customer ? (
                       <div className="bg-zinc-800/50 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-white text-sm">Available: <span className="text-green-500 font-semibold">Rs {creditBalance.toLocaleString()}</span></p>
-                            {useCredits && creditsToUse > 0 && <p className="text-green-400 text-xs mt-1">Using Rs {creditsToUse.toFixed(2)} credits</p>}
+                            {useCredits && creditsToUse > 0 && (
+                              <p className="text-green-400 text-xs mt-1">Using Rs {creditsToUse.toFixed(2)} credits</p>
+                            )}
                           </div>
-                          <Switch checked={useCredits} onCheckedChange={setUseCredits} disabled={creditBalance <= 0} />
+                          <Switch
+                            checked={useCredits}
+                            onCheckedChange={setUseCredits}
+                            disabled={creditBalance <= 0}
+                            data-testid="use-credits-switch"
+                          />
                         </div>
-                        {creditBalance <= 0 && <p className="text-gray-500 text-xs mt-2">No credits available. Earn credits by making purchases!</p>}
+                        {creditBalance <= 0 && (
+                          <p className="text-gray-500 text-xs mt-2">No credits available. Earn credits by making purchases!</p>
+                        )}
                       </div>
                     ) : (
                       <div className="bg-zinc-800/50 rounded-lg p-3">
                         <p className="text-gray-400 text-sm mb-2">Want to use store credits?</p>
-                        <Button type="button" variant="outline" size="sm" onClick={() => setShowLoginDialog(true)} className="border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowLoginDialog(true)}
+                          className="border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black"
+                          data-testid="login-for-credits-btn"
+                        >
                           Login to use credits
                         </Button>
                       </div>
                     )}
                   </div>
                 )}
-
+                
+                {/* Promo Code */}
                 <div className="pt-3 border-t border-zinc-800">
                   <Label className="text-gray-400 text-sm flex items-center gap-2 mb-2">
                     <Ticket className="w-4 h-4 text-amber-500" />{t('promoCode')}
@@ -294,7 +377,8 @@ export default function CheckoutPage() {
                     </div>
                   )}
                 </div>
-
+                
+                {/* Price Summary */}
                 <div className="pt-3 border-t border-zinc-800 space-y-2">
                   <div className="flex justify-between text-sm"><span className="text-gray-400">{t('subtotal')}</span><span className="text-white">Rs {subtotal.toLocaleString()}</span></div>
                   {promoDiscount && <div className="flex justify-between text-sm"><span className="text-green-400">{t('discount')}</span><span className="text-green-400">-Rs {discountAmount}</span></div>}
@@ -303,7 +387,7 @@ export default function CheckoutPage() {
                   {creditsToUse > 0 && <div className="flex justify-between text-sm"><span className="text-green-400 flex items-center gap-1"><Coins className="w-3 h-3" /> Credits Used</span><span className="text-green-400">-Rs {creditsToUse.toFixed(2)}</span></div>}
                   <div className="flex justify-between pt-2 border-t border-zinc-800"><span className="text-white font-semibold">{t('total')}</span><span className="text-amber-500 font-bold text-lg">Rs {total.toFixed(2)}</span></div>
                 </div>
-
+                
                 <Button type="submit" disabled={isSubmitting} className="w-full bg-amber-500 hover:bg-amber-600 text-black py-6">
                   {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</> : <><ShoppingBag className="w-4 h-4 mr-2" />{t('proceedToCheckout')}</>}
                 </Button>
@@ -313,8 +397,17 @@ export default function CheckoutPage() {
         </div>
       </main>
       <Footer />
-
-      <CustomerAuth isOpen={showLoginDialog} onClose={() => setShowLoginDialog(false)} onSuccess={() => { setShowLoginDialog(false); window.location.reload(); }} />
+      
+      {/* Login Dialog for Credits */}
+      <CustomerAuth 
+        isOpen={showLoginDialog} 
+        onClose={() => setShowLoginDialog(false)} 
+        onSuccess={() => {
+          setShowLoginDialog(false);
+          // Refresh page to get updated customer data
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

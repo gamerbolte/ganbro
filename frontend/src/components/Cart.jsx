@@ -1,14 +1,16 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { ShoppingCart, X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
+// Cart Context
 const CartContext = createContext();
 
 export const useCart = () => useContext(CartContext);
 
+// Get cart from localStorage
 const getStoredCart = () => {
   try {
     const cart = localStorage.getItem('gsn_cart');
@@ -18,6 +20,7 @@ const getStoredCart = () => {
   }
 };
 
+// Save cart to localStorage
 const saveCart = (cart) => {
   localStorage.setItem('gsn_cart', JSON.stringify(cart));
 };
@@ -99,15 +102,16 @@ export function CartProvider({ children }) {
   );
 }
 
+// Cart Sidebar Component
 export function CartSidebar() {
   const { cart, removeFromCart, updateQuantity, getCartTotal, getCartCount, clearCart, isOpen, setIsOpen } = useCart();
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
+        <Button 
+          variant="ghost" 
+          size="icon" 
           className="relative text-white hover:text-amber-500"
           data-testid="cart-trigger"
         >
@@ -123,7 +127,7 @@ export function CartSidebar() {
         <SheetHeader>
           <SheetTitle className="text-white flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-amber-500" />
+              <ShoppingBag className="w-5 h-5 text-amber-500" /> 
               My Cart ({getCartCount()})
             </span>
             {cart.length > 0 && (
@@ -150,14 +154,14 @@ export function CartSidebar() {
             cart.map((item) => (
               <div key={`${item.product.id}-${item.variation.id}`} className="flex gap-3 p-3 bg-zinc-800 rounded-lg">
                 {item.product.image_url && (
-                  <img
-                    src={item.product.image_url}
+                  <img 
+                    src={item.product.image_url} 
                     alt={item.product.name}
                     className="w-16 h-16 object-cover rounded"
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <Link
+                  <Link 
                     to={`/product/${item.product.slug || item.product.id}`}
                     className="text-white font-medium hover:text-amber-500 truncate block text-sm"
                     onClick={() => setIsOpen(false)}
@@ -168,7 +172,8 @@ export function CartSidebar() {
                   <p className="text-amber-500 font-semibold text-sm mt-1">
                     Rs {item.variation.price.toLocaleString()}
                   </p>
-
+                  
+                  {/* Quantity Controls */}
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => updateQuantity(item.product.id, item.variation.id, item.quantity - 1)}
@@ -208,14 +213,14 @@ export function CartSidebar() {
               <span className="text-gray-400">Total</span>
               <span className="text-amber-500 font-bold">Rs {getCartTotal().toLocaleString()}</span>
             </div>
-
+            
             <Link to="/checkout" onClick={() => setIsOpen(false)}>
               <Button className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-6">
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Proceed to Checkout
               </Button>
             </Link>
-
+            
             <p className="text-gray-500 text-xs text-center">
               You can also order individual items from their product pages
             </p>

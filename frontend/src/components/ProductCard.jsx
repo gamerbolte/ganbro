@@ -10,7 +10,11 @@ export default function ProductCard({ product }) {
     : 0;
 
   const tags = product.tags || [];
+  
+  // Check if flash sale is active
   const isFlashSale = product.flash_sale_end && new Date(product.flash_sale_end) > new Date();
+  
+  // Use slug if available, otherwise fall back to ID
   const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
 
   return (
@@ -25,13 +29,13 @@ export default function ProductCard({ product }) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.border = isFlashSale ? '2px solid #ef4444' : '2px solid #f59e0b';
-        e.currentTarget.style.boxShadow = isFlashSale
+        e.currentTarget.style.boxShadow = isFlashSale 
           ? '0 0 20px rgba(239, 68, 68, 0.5), 0 4px 20px rgba(0,0,0,0.3)'
           : '0 0 15px rgba(245, 158, 11, 0.4), 0 4px 20px rgba(0,0,0,0.3)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.border = isFlashSale ? '2px solid #ef4444' : '2px solid rgba(255, 255, 255, 0.15)';
-        e.currentTarget.style.boxShadow = isFlashSale
+        e.currentTarget.style.boxShadow = isFlashSale 
           ? '0 0 15px rgba(239, 68, 68, 0.3), 0 4px 20px rgba(0,0,0,0.3)'
           : '0 4px 20px rgba(0,0,0,0.3)';
       }}
@@ -39,10 +43,12 @@ export default function ProductCard({ product }) {
       <div className="aspect-square relative overflow-hidden bg-black/50">
         <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
 
+        {/* Wishlist Button */}
         <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <WishlistButton productId={product.id} size="sm" />
         </div>
-
+        
+        {/* Flash Sale Badge */}
         {isFlashSale && (
           <FlashSaleBadge endTime={product.flash_sale_end} small={true} />
         )}

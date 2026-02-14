@@ -4,14 +4,18 @@ const LanguageContext = createContext();
 
 export const useLanguage = () => useContext(LanguageContext);
 
+// Translations
 const translations = {
   en: {
+    // Navbar
     home: 'Home',
     about: 'About',
     blog: 'Blog',
     trackOrder: 'Track Order',
     search: 'Search',
     searchProducts: 'Search products...',
+    
+    // Homepage
     excellentOnTrustpilot: 'EXCELLENT ON TRUSTPILOT',
     checkAllReviews: 'CHECK ALL REVIEWS',
     whatOurCustomersSay: 'WHAT OUR CUSTOMERS SAY',
@@ -22,6 +26,8 @@ const translations = {
     browseCollection: 'Browse our collection of premium digital products.',
     viewAll: 'View All',
     noProductsFound: 'No products found.',
+    
+    // Product Page
     selectPlan: 'Select Plan',
     orderNow: 'Order Now',
     addToCart: 'Add to Cart',
@@ -32,6 +38,8 @@ const translations = {
     onlyLeft: 'Only {count} left!',
     inStock: 'In Stock',
     customersAlsoBought: 'Customers Also Bought',
+    
+    // Cart
     myCart: 'My Cart',
     cartEmpty: 'Your cart is empty',
     addProductsToStart: 'Add some products to get started!',
@@ -39,6 +47,8 @@ const translations = {
     total: 'Total',
     proceedToCheckout: 'Proceed to Checkout',
     clearAll: 'Clear All',
+    
+    // Order Dialog
     placeYourOrder: 'Place Your Order',
     fullName: 'Full Name',
     phoneNumber: 'Phone Number',
@@ -53,6 +63,8 @@ const translations = {
     cancel: 'Cancel',
     orderCreated: 'Order Created!',
     completePayment: 'Complete Payment',
+    
+    // Order Tracking
     trackYourOrder: 'Track Your Order',
     enterOrderId: 'Enter your order ID to check the status',
     track: 'Track',
@@ -63,22 +75,30 @@ const translations = {
     delivery: 'Delivery',
     orderTimeline: 'Order Timeline',
     needHelp: 'Need help with your order?',
+    
+    // Footer
     yourTrustedSource: 'Your trusted source for digital products in Nepal since 2021.',
     quickLinks: 'Quick Links',
     connect: 'Connect',
     allRightsReserved: 'All rights reserved.',
+    
+    // Common
     loading: 'Loading...',
     error: 'Error',
     success: 'Success',
     close: 'Close',
   },
+  
   np: {
+    // Navbar
     home: 'गृहपृष्ठ',
     about: 'हाम्रोबारे',
     blog: 'ब्लग',
     trackOrder: 'अर्डर ट्र्याक',
     search: 'खोज्नुहोस्',
     searchProducts: 'उत्पादन खोज्नुहोस्...',
+    
+    // Homepage
     excellentOnTrustpilot: 'ट्रस्टपाइलटमा उत्कृष्ट',
     checkAllReviews: 'सबै समीक्षाहरू हेर्नुहोस्',
     whatOurCustomersSay: 'हाम्रा ग्राहकहरू के भन्छन्',
@@ -89,6 +109,8 @@ const translations = {
     browseCollection: 'हाम्रो प्रिमियम डिजिटल उत्पादनहरूको संग्रह हेर्नुहोस्।',
     viewAll: 'सबै हेर्नुहोस्',
     noProductsFound: 'कुनै उत्पादन फेला परेन।',
+    
+    // Product Page
     selectPlan: 'प्लान छान्नुहोस्',
     orderNow: 'अहिले अर्डर गर्नुहोस्',
     addToCart: 'कार्टमा थप्नुहोस्',
@@ -99,6 +121,8 @@ const translations = {
     onlyLeft: 'केवल {count} बाँकी!',
     inStock: 'स्टकमा छ',
     customersAlsoBought: 'ग्राहकहरूले यो पनि किनेका छन्',
+    
+    // Cart
     myCart: 'मेरो कार्ट',
     cartEmpty: 'तपाईंको कार्ट खाली छ',
     addProductsToStart: 'सुरु गर्न केही उत्पादनहरू थप्नुहोस्!',
@@ -106,6 +130,8 @@ const translations = {
     total: 'जम्मा',
     proceedToCheckout: 'चेकआउटमा जानुहोस्',
     clearAll: 'सबै हटाउनुहोस्',
+    
+    // Order Dialog
     placeYourOrder: 'तपाईंको अर्डर दिनुहोस्',
     fullName: 'पूरा नाम',
     phoneNumber: 'फोन नम्बर',
@@ -120,6 +146,8 @@ const translations = {
     cancel: 'रद्द गर्नुहोस्',
     orderCreated: 'अर्डर सिर्जना भयो!',
     completePayment: 'भुक्तानी पूरा गर्नुहोस्',
+    
+    // Order Tracking
     trackYourOrder: 'तपाईंको अर्डर ट्र्याक गर्नुहोस्',
     enterOrderId: 'स्थिति जाँच गर्न आफ्नो अर्डर आईडी प्रविष्ट गर्नुहोस्',
     track: 'ट्र्याक',
@@ -130,10 +158,14 @@ const translations = {
     delivery: 'डेलिभरी',
     orderTimeline: 'अर्डर टाइमलाइन',
     needHelp: 'तपाईंको अर्डरमा मद्दत चाहिन्छ?',
+    
+    // Footer
     yourTrustedSource: '२०२१ देखि नेपालमा डिजिटल उत्पादनहरूको लागि तपाईंको विश्वसनीय स्रोत।',
     quickLinks: 'छिटो लिंकहरू',
     connect: 'जडान गर्नुहोस्',
     allRightsReserved: 'सबै अधिकार सुरक्षित।',
+    
+    // Common
     loading: 'लोड हुँदैछ...',
     error: 'त्रुटि',
     success: 'सफलता',
@@ -153,9 +185,12 @@ export function LanguageProvider({ children }) {
 
   const t = (key, params = {}) => {
     let text = translations[language]?.[key] || translations['en'][key] || key;
+    
+    // Replace parameters like {count} with actual values
     Object.keys(params).forEach(param => {
       text = text.replace(`{${param}}`, params[param]);
     });
+    
     return text;
   };
 
@@ -170,9 +205,10 @@ export function LanguageProvider({ children }) {
   );
 }
 
+// Language Toggle Button Component
 export function LanguageToggle() {
   const { language, toggleLanguage } = useLanguage();
-
+  
   return (
     <button
       onClick={toggleLanguage}

@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { productsAPI, ordersAPI, promoCodesAPI, settingsAPI, creditsAPI } from '@/lib/api';
+import { productsAPI, ordersAPI, promoCodesAPI, settingsAPI, sendTrustpilotInvitation, creditsAPI } from '@/lib/api';
 import { useCart } from '@/components/Cart';
 import { useWishlist } from '@/components/Wishlist';
 import { useLanguage } from '@/components/Language';
@@ -30,7 +30,7 @@ export default function ProductPage() {
   const { addToCart, setIsOpen: setCartOpen } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { customer } = useCustomer();
-
+  
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedVariation, setSelectedVariation] = useState(null);
@@ -39,18 +39,22 @@ export default function ProductPage() {
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderForm, setOrderForm] = useState({ customer_name: '', customer_phone: '', customer_email: '', custom_fields: {}, remark: '' });
-
+  
+  // Promo code state
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
-
+  
+  // Pricing settings
   const [pricingSettings, setPricingSettings] = useState({ service_charge: 0, tax_percentage: 0, tax_label: 'Tax' });
 
+  // Store Credits
   const [creditBalance, setCreditBalance] = useState(0);
   const [useCredits, setUseCredits] = useState(false);
   const [creditSettings, setCreditSettings] = useState({ cashback_percentage: 5, is_enabled: true });
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  // Auto-fill form for logged-in users
   useEffect(() => {
     if (customer) {
       setOrderForm(prev => ({
@@ -59,6 +63,7 @@ export default function ProductPage() {
         customer_email: customer.email || '',
         customer_phone: customer.whatsapp_number || customer.phone || ''
       }));
+      // Fetch credit balance
       fetchCreditBalance(customer.email);
     }
   }, [customer]);
@@ -85,7 +90,8 @@ export default function ProductPage() {
         setPricingSettings(settingsRes.data);
         setCreditSettings(creditRes.data);
         if (productRes.data.variations?.length > 0) setSelectedVariation(productRes.data.variations[0].id);
-
+        
+        // Fetch related products
         try {
           const relatedRes = await productsAPI.getRelated(productSlug);
           setRelatedProducts(relatedRes.data || []);
@@ -102,11 +108,16 @@ export default function ProductPage() {
   }, [productSlug]);
 
   const currentVariation = product?.variations?.find(v => v.id === selectedVariation);
+  
+  // Flash sale check
   const isFlashSale = product?.flash_sale_end && new Date(product.flash_sale_end) > new Date();
+  
+  // Stock indicator
   const stockQuantity = product?.stock_quantity;
   const hasLimitedStock = stockQuantity !== null && stockQuantity !== undefined;
   const isLowStock = hasLimitedStock && stockQuantity <= 5 && stockQuantity > 0;
-
+  
+  // Calculate pricing
   const unitPrice = currentVariation?.price || 0;
   const subtotal = unitPrice * quantity;
   const discountAmount = promoDiscount?.discount_amount || 0;
@@ -115,12 +126,16 @@ export default function ProductPage() {
   const taxPercentage = parseFloat(pricingSettings.tax_percentage) || 0;
   const taxAmount = afterDiscount * (taxPercentage / 100);
   const totalBeforeCredits = afterDiscount + serviceCharge + taxAmount;
+  
+  // Calculate credits to use (max available or total, whichever is lower)
   const creditsToUse = useCredits && customer ? Math.min(creditBalance, totalBeforeCredits) : 0;
   const total = Math.max(0, totalBeforeCredits - creditsToUse);
 
   const handleQuantityChange = (delta) => {
     const newQty = quantity + delta;
-    if (newQty >= 1 && (!hasLimitedStock || newQty <= stockQuantity)) setQuantity(newQty);
+    if (newQty >= 1 && (!hasLimitedStock || newQty <= stockQuantity)) {
+      setQuantity(newQty);
+    }
   };
 
   const handleAddToCart = () => {
@@ -166,8 +181,12 @@ export default function ProductPage() {
           if (value) fullRemark += `${field.label}: ${value}\n`;
         });
       }
-      if (promoDiscount) fullRemark += `Promo Code: ${promoDiscount.code} (-Rs ${promoDiscount.discount_amount})\n`;
-      if (creditsToUse > 0) fullRemark += `Store Credits Used: Rs ${creditsToUse}\n`;
+      if (promoDiscount) {
+        fullRemark += `Promo Code: ${promoDiscount.code} (-Rs ${promoDiscount.discount_amount})\n`;
+      }
+      if (creditsToUse > 0) {
+        fullRemark += `Store Credits Used: Rs ${creditsToUse}\n`;
+      }
       if (orderForm.remark) fullRemark += `Notes: ${orderForm.remark}`;
 
       const orderPayload = {
@@ -182,14 +201,40 @@ export default function ProductPage() {
 
       const res = await ordersAPI.create(orderPayload);
       const orderId = res.data.order_id;
-
+      
+      // If total is 0 (fully paid with credits), redirect to WhatsApp directly
       if (total === 0 && creditsToUse > 0) {
+        const siteUrl = window.location.origin;
+        const invoiceUrl = `${siteUrl}/invoice/${orderId}`;
+        
+        const whatsappMessage = `*#${orderId.slice(0, 8).toUpperCase()}*
+
+*${quantity}x* ${product.name} - ${currentVariation.name} – Rs ${currentVariation.price.toLocaleString()}
+
+Subtotal: Rs ${subtotal.toLocaleString()}
+Store Credits Used: Rs ${creditsToUse.toLocaleString()}
+*Total: Rs 0 (Paid with Credits)*
+
+Customer: *${orderForm.customer_name}* ${orderForm.customer_phone} ${orderForm.customer_email || ''}
+
+Payment: *Store Credits* (Full Payment)
+
+See invoice: ${invoiceUrl}`;
+
+        const encodedMessage = encodeURIComponent(whatsappMessage);
+        const whatsappNumber = '9779743488871';
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+        
         setIsOrderDialogOpen(false);
-        toast.success('Order placed with store credits!');
-        navigate(`/invoice/${orderId}`);
+        toast.success('Order placed with store credits! Opening WhatsApp...');
+        
+        setTimeout(() => {
+          window.location.href = whatsappUrl;
+        }, 500);
         return;
       }
-
+      
+      // Redirect to our custom payment page with all required data
       const params = new URLSearchParams({
         total: total.toFixed(2),
         items: `${product.name} (${currentVariation.name} x${quantity})`,
@@ -201,7 +246,20 @@ export default function ProductPage() {
         price: currentVariation.price.toString(),
         qty: quantity.toString()
       });
-
+      
+      // Send Trustpilot invitation if email was provided
+      if (orderForm.customer_email) {
+        sendTrustpilotInvitation({
+          email: orderForm.customer_email,
+          name: orderForm.customer_name,
+          orderId: orderId,
+          productSlug: product.slug || product.id,
+          productImage: product.image_url,
+          productName: `${product.name} - ${currentVariation.name}`,
+        });
+      }
+      
+      // Navigate to payment page
       navigate(`/payment/${orderId}?${params.toString()}`);
     } catch (error) {
       console.error('Order error:', error);
@@ -252,7 +310,12 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <SEO title={`${product.name} | GameShop Nepal`} description={product.description || `Buy ${product.name} at the best price in Nepal.`} image={product.image_url} type="product" />
+      <SEO 
+        title={`${product.name} | GameShop Nepal`}
+        description={product.description || `Buy ${product.name} at the best price in Nepal. Instant delivery guaranteed.`}
+        image={product.image_url}
+        type="product"
+      />
       <Navbar />
       <main className="pt-16 lg:pt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:py-4">
@@ -266,18 +329,33 @@ export default function ProductPage() {
             <div className="lg:sticky lg:top-24 lg:self-start" data-testid="product-image-container">
               <div className="aspect-square bg-card rounded-lg overflow-hidden border border-white/10 animate-fade-in relative">
                 <img src={product.image_url} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                <button onClick={() => toggleWishlist(product.id)} className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all ${inWishlist ? 'bg-red-500 text-white' : 'bg-black/50 text-white hover:bg-red-500/20'}`}>
+                
+                {/* Wishlist button on image */}
+                <button
+                  onClick={() => toggleWishlist(product.id)}
+                  className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    inWishlist ? 'bg-red-500 text-white' : 'bg-black/50 text-white hover:bg-red-500/20'
+                  }`}
+                >
                   <Heart className={`w-5 h-5 ${inWishlist ? 'fill-current' : ''}`} />
                 </button>
               </div>
             </div>
 
             <div className="space-y-4 lg:space-y-6 animate-slide-up" data-testid="product-details">
-              {isFlashSale && <FlashSaleTimer endTime={product.flash_sale_end} label={product.flash_sale_label || 'FLASH SALE'} />}
-
+              {/* Flash Sale Timer */}
+              {isFlashSale && (
+                <FlashSaleTimer 
+                  endTime={product.flash_sale_end} 
+                  label={product.flash_sale_label || 'FLASH SALE'} 
+                />
+              )}
+              
               <div>
                 {product.is_sold_out && <Badge variant="destructive" className="mb-2">{t('soldOut')}</Badge>}
                 <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-white uppercase tracking-tight">{product.name}</h1>
+                
+                {/* Stock Indicator */}
                 {!product.is_sold_out && (
                   <div className="mt-2">
                     {isLowStock ? (
@@ -285,6 +363,8 @@ export default function ProductPage() {
                         <AlertTriangle className="w-4 h-4" />
                         <span className="text-sm font-medium">{t('onlyLeft', { count: stockQuantity })}</span>
                       </div>
+                    ) : hasLimitedStock ? (
+                      <span className="text-green-500 text-sm">{t('inStock')}</span>
                     ) : (
                       <span className="text-green-500 text-sm">{t('inStock')}</span>
                     )}
@@ -317,14 +397,25 @@ export default function ProductPage() {
                 </div>
               )}
 
+              {/* Quantity Selector */}
               <div className="space-y-2">
                 <h3 className="font-heading text-sm lg:text-base font-semibold text-white uppercase tracking-wider">{t('quantity')}</h3>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1} className="w-10 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white" data-testid="qty-decrease">
+                  <button
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1}
+                    className="w-10 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white"
+                    data-testid="qty-decrease"
+                  >
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="text-white font-bold text-xl w-12 text-center" data-testid="qty-value">{quantity}</span>
-                  <button onClick={() => handleQuantityChange(1)} disabled={hasLimitedStock && quantity >= stockQuantity} className="w-10 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white" data-testid="qty-increase">
+                  <button
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={hasLimitedStock && quantity >= stockQuantity}
+                    className="w-10 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white"
+                    data-testid="qty-increase"
+                  >
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
@@ -346,9 +437,11 @@ export default function ProductPage() {
                 <Button onClick={() => setIsOrderDialogOpen(true)} disabled={product.is_sold_out} className="w-full bg-gold-500 hover:bg-gold-600 text-black font-heading text-base uppercase tracking-wider py-5 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-gold-500/20" data-testid="order-now-btn">
                   <ShoppingCart className="mr-2 h-5 w-5" />{t('orderNow')}
                 </Button>
+                
                 <Button onClick={handleAddToCart} disabled={product.is_sold_out} variant="outline" className="w-full border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-black font-heading text-base uppercase tracking-wider py-5 rounded-lg transition-all duration-300" data-testid="add-to-cart-btn">
                   <Plus className="mr-2 h-5 w-5" />{t('addToCart')}
                 </Button>
+                
                 <p className="text-white/50 text-xs text-center flex items-center justify-center gap-1"><AlertCircle className="h-3 w-3" />Please read the description below before ordering.</p>
                 <p className="text-white/40 text-xs text-center">By ordering, you agree to our <Link to="/terms" className="text-gold-500 hover:underline">Terms & Conditions</Link></p>
               </div>
@@ -361,12 +454,15 @@ export default function ProductPage() {
               <div className="text-center text-white/40 text-xs pt-2"><p>Questions? Contact us via our social media</p></div>
             </div>
           </div>
-
+          
+          {/* Customers Also Bought Section */}
           {relatedProducts.length > 0 && (
             <div className="mt-12 pt-8 border-t border-white/10">
               <h2 className="font-heading text-xl font-bold text-white uppercase tracking-wider mb-6">{t('customersAlsoBought')}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {relatedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                {relatedProducts.map(p => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
               </div>
             </div>
           )}
@@ -376,106 +472,197 @@ export default function ProductPage() {
       <Dialog open={isOrderDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="bg-card border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto sm:mx-auto">
           <DialogHeader><DialogTitle className="font-heading text-xl uppercase">{t('placeYourOrder')}</DialogTitle></DialogHeader>
+
           <form onSubmit={handleSubmitOrder} className="space-y-4">
-            <div className="bg-black/50 rounded-lg p-3 flex items-center gap-3">
-              <img src={product.image_url} alt={product.name} className="w-12 h-12 rounded object-cover" />
-              <div className="flex-1 min-w-0"><p className="text-white font-semibold text-sm truncate">{product.name}</p><p className="text-white/60 text-xs">{currentVariation?.name} × {quantity}</p></div>
-            </div>
+              <div className="bg-black/50 rounded-lg p-3 flex items-center gap-3">
+                <img src={product.image_url} alt={product.name} className="w-12 h-12 rounded object-cover" />
+                <div className="flex-1 min-w-0"><p className="text-white font-semibold text-sm truncate">{product.name}</p><p className="text-white/60 text-xs">{currentVariation?.name} × {quantity}</p></div>
+              </div>
 
-            <div className="space-y-3">
-              {customer ? (
-                <div className="bg-zinc-800/50 rounded-lg p-3 space-y-2">
-                  <p className="text-gray-400 text-xs mb-2">Logged in as:</p>
-                  <p className="text-white font-medium">{orderForm.customer_name}</p>
-                  <p className="text-gray-300 text-sm">{orderForm.customer_phone}</p>
-                  {orderForm.customer_email && <p className="text-gray-300 text-sm">{orderForm.customer_email}</p>}
-                </div>
-              ) : (
-                <>
-                  <div><Label className="text-white/80 text-sm">{t('fullName')} *</Label><Input value={orderForm.customer_name} onChange={(e) => setOrderForm({...orderForm, customer_name: e.target.value})} className="bg-black border-white/20 mt-1 text-base" placeholder="Enter your full name" required data-testid="order-name-input" /></div>
-                  <div><Label className="text-white/80 text-sm">{t('phoneNumber')} *</Label><Input value={orderForm.customer_phone} onChange={(e) => setOrderForm({...orderForm, customer_phone: e.target.value})} className="bg-black border-white/20 mt-1 text-base" placeholder="9801234567" required data-testid="order-phone-input" /></div>
-                  <div><Label className="text-white/80 text-sm">{t('email')}</Label><Input type="email" value={orderForm.customer_email} onChange={(e) => setOrderForm({...orderForm, customer_email: e.target.value})} className="bg-black border-white/20 mt-1 text-base" placeholder="your@email.com" data-testid="order-email-input" /></div>
-                </>
-              )}
-
-              {product.custom_fields && product.custom_fields.length > 0 && (
-                <div className="pt-2 border-t border-white/10 space-y-3">
-                  {product.custom_fields.map((field) => (
-                    <div key={field.id}><Label className="text-white/80 text-sm">{field.label} {field.required && '*'}</Label><Input value={orderForm.custom_fields[field.id] || ''} onChange={(e) => setOrderForm({...orderForm, custom_fields: {...orderForm.custom_fields, [field.id]: e.target.value}})} className="bg-black border-white/20 mt-1 text-base" placeholder={field.placeholder} required={field.required} /></div>
-                  ))}
-                </div>
-              )}
-
-              <div><Label className="text-white/80 text-sm">{t('notes')}</Label><Textarea value={orderForm.remark} onChange={(e) => setOrderForm({...orderForm, remark: e.target.value})} className="bg-black border-white/20 mt-1 text-base min-h-[60px]" placeholder="Any special instructions..." /></div>
-            </div>
-
-            {creditSettings.is_enabled && (
-              <div className="pt-3 border-t border-white/10">
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-white/80 text-sm flex items-center gap-2"><Coins className="w-4 h-4 text-green-500" /> Use Store Credits</Label>
-                </div>
+              <div className="space-y-3">
                 {customer ? (
-                  <div className="bg-zinc-800/50 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-white text-sm">Available: <span className="text-green-500 font-semibold">Rs {creditBalance.toLocaleString()}</span></p>
-                        {useCredits && creditsToUse > 0 && <p className="text-green-400 text-xs mt-1">Using Rs {creditsToUse.toFixed(2)} credits</p>}
-                      </div>
-                      <Switch checked={useCredits} onCheckedChange={setUseCredits} disabled={creditBalance <= 0} data-testid="use-credits-switch-product" />
-                    </div>
-                    {creditBalance <= 0 && <p className="text-gray-500 text-xs mt-2">No credits available. Earn credits by making purchases!</p>}
+                  <div className="bg-zinc-800/50 rounded-lg p-3 space-y-2">
+                    <p className="text-gray-400 text-xs mb-2">Logged in as:</p>
+                    <p className="text-white font-medium">{orderForm.customer_name}</p>
+                    <p className="text-gray-300 text-sm">{orderForm.customer_phone}</p>
+                    {orderForm.customer_email && <p className="text-gray-300 text-sm">{orderForm.customer_email}</p>}
                   </div>
                 ) : (
-                  <div className="bg-zinc-800/50 rounded-lg p-3">
-                    <p className="text-gray-400 text-sm mb-2">Want to use store credits?</p>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setShowLoginDialog(true)} className="border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black" data-testid="login-for-credits-btn-product">
-                      Login to use credits
+                  <>
+                    <div><Label className="text-white/80 text-sm">{t('fullName')} *</Label><Input value={orderForm.customer_name} onChange={(e) => setOrderForm({...orderForm, customer_name: e.target.value})} className="bg-black border-white/20 mt-1 text-base" placeholder="Enter your full name" required data-testid="order-name-input" /></div>
+                    <div><Label className="text-white/80 text-sm">{t('phoneNumber')} *</Label><Input value={orderForm.customer_phone} onChange={(e) => setOrderForm({...orderForm, customer_phone: e.target.value})} className="bg-black border-white/20 mt-1 text-base" placeholder="9801234567" required data-testid="order-phone-input" /></div>
+                    <div><Label className="text-white/80 text-sm">{t('email')}</Label><Input type="email" value={orderForm.customer_email} onChange={(e) => setOrderForm({...orderForm, customer_email: e.target.value})} className="bg-black border-white/20 mt-1 text-base" placeholder="your@email.com" data-testid="order-email-input" /></div>
+                  </>
+                )}
+
+                {product.custom_fields && product.custom_fields.length > 0 && (
+                  <div className="pt-2 border-t border-white/10 space-y-3">
+                    {product.custom_fields.map((field) => (
+                      <div key={field.id}><Label className="text-white/80 text-sm">{field.label} {field.required && '*'}</Label><Input value={orderForm.custom_fields[field.id] || ''} onChange={(e) => setOrderForm({...orderForm, custom_fields: {...orderForm.custom_fields, [field.id]: e.target.value}})} className="bg-black border-white/20 mt-1 text-base" placeholder={field.placeholder} required={field.required} /></div>
+                    ))}
+                  </div>
+                )}
+
+                <div><Label className="text-white/80 text-sm">{t('notes')}</Label><Textarea value={orderForm.remark} onChange={(e) => setOrderForm({...orderForm, remark: e.target.value})} className="bg-black border-white/20 mt-1 text-base min-h-[60px]" placeholder="Any special instructions..." /></div>
+              </div>
+
+              {/* Store Credits Section */}
+              {creditSettings.is_enabled && (
+                <div className="pt-3 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-white/80 text-sm flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-green-500" /> Use Store Credits
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3 h-3 text-gray-500 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-zinc-800 border-zinc-700 text-white max-w-xs">
+                            <p className="text-sm">
+                              <span className="font-semibold text-amber-500">How to earn credits:</span><br/>
+                              Purchase products and get {creditSettings.cashback_percentage}% cashback as store credits when your order is completed!
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </Label>
+                  </div>
+                  
+                  {customer ? (
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-white text-sm">Available: <span className="text-green-500 font-semibold">Rs {creditBalance.toLocaleString()}</span></p>
+                          {useCredits && creditsToUse > 0 && (
+                            <p className="text-green-400 text-xs mt-1">Using Rs {creditsToUse.toFixed(2)} credits</p>
+                          )}
+                        </div>
+                        <Switch
+                          checked={useCredits}
+                          onCheckedChange={setUseCredits}
+                          disabled={creditBalance <= 0}
+                          data-testid="use-credits-switch-product"
+                        />
+                      </div>
+                      {creditBalance <= 0 && (
+                        <p className="text-gray-500 text-xs mt-2">No credits available. Earn credits by making purchases!</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <p className="text-gray-400 text-sm mb-2">Want to use store credits?</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowLoginDialog(true)}
+                        className="border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black"
+                        data-testid="login-for-credits-btn-product"
+                      >
+                        Login to use credits
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Promo Code Section */}
+              <div className="pt-3 border-t border-white/10">
+                <Label className="text-white/80 text-sm flex items-center gap-2 mb-2">
+                  <Ticket className="h-4 w-4 text-gold-500" />
+                  {t('promoCode')}
+                </Label>
+                {promoDiscount ? (
+                  <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
+                    <div>
+                      <span className="text-green-400 font-semibold">{promoDiscount.code}</span>
+                      <span className="text-green-400/60 text-sm ml-2">-Rs {promoDiscount.discount_amount}</span>
+                    </div>
+                    <button type="button" onClick={handleRemovePromo} className="text-white/40 hover:text-red-400">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      className="bg-black border-white/20 uppercase font-mono flex-1"
+                      placeholder="Enter code"
+                    />
+                    <Button 
+                      type="button" 
+                      onClick={handleApplyPromo} 
+                      disabled={isValidatingPromo || !promoCode.trim()}
+                      variant="outline" 
+                      className="border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-black"
+                    >
+                      {isValidatingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : t('apply')}
                     </Button>
                   </div>
                 )}
               </div>
-            )}
 
-            <div className="pt-3 border-t border-white/10">
-              <Label className="text-white/80 text-sm flex items-center gap-2 mb-2"><Ticket className="h-4 w-4 text-gold-500" />{t('promoCode')}</Label>
-              {promoDiscount ? (
-                <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
-                  <div><span className="text-green-400 font-semibold">{promoDiscount.code}</span><span className="text-green-400/60 text-sm ml-2">-Rs {promoDiscount.discount_amount}</span></div>
-                  <button type="button" onClick={handleRemovePromo} className="text-white/40 hover:text-red-400"><X className="h-4 w-4" /></button>
+              {/* Price Breakdown */}
+              <div className="bg-black/50 rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-white/60">{t('subtotal')} ({quantity}x)</span>
+                  <span className="text-white">Rs {subtotal.toFixed(2)}</span>
                 </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} className="bg-black border-white/20 uppercase font-mono flex-1" placeholder="Enter code" />
-                  <Button type="button" onClick={handleApplyPromo} disabled={isValidatingPromo || !promoCode.trim()} variant="outline" className="border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-black">
-                    {isValidatingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : t('apply')}
-                  </Button>
-                </div>
-              )}
-            </div>
+                
+                {promoDiscount && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-400">{t('discount')} ({promoDiscount.code})</span>
+                    <span className="text-green-400">-Rs {discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                {serviceCharge > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">{t('serviceCharge')}</span>
+                    <span className="text-white">Rs {serviceCharge.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                {taxPercentage > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">{pricingSettings.tax_label || 'Tax'} ({taxPercentage}%)</span>
+                    <span className="text-white">Rs {taxAmount.toFixed(2)}</span>
+                  </div>
+                )}
 
-            <div className="bg-black/50 rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between text-sm"><span className="text-white/60">{t('subtotal')} ({quantity}x)</span><span className="text-white">Rs {subtotal.toFixed(2)}</span></div>
-              {promoDiscount && <div className="flex items-center justify-between text-sm"><span className="text-green-400">{t('discount')} ({promoDiscount.code})</span><span className="text-green-400">-Rs {discountAmount.toFixed(2)}</span></div>}
-              {serviceCharge > 0 && <div className="flex items-center justify-between text-sm"><span className="text-white/60">{t('serviceCharge')}</span><span className="text-white">Rs {serviceCharge.toFixed(2)}</span></div>}
-              {taxPercentage > 0 && <div className="flex items-center justify-between text-sm"><span className="text-white/60">{pricingSettings.tax_label || 'Tax'} ({taxPercentage}%)</span><span className="text-white">Rs {taxAmount.toFixed(2)}</span></div>}
-              {creditsToUse > 0 && <div className="flex items-center justify-between text-sm"><span className="text-green-400 flex items-center gap-1"><Coins className="w-3 h-3" /> Credits Used</span><span className="text-green-400">-Rs {creditsToUse.toFixed(2)}</span></div>}
-              <div className="border-t border-white/10 pt-2 flex items-center justify-between">
-                <span className="text-white font-semibold">{t('total')}</span>
-                <span className="text-gold-500 font-bold text-lg">Rs {total.toFixed(2)}</span>
+                {creditsToUse > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-400 flex items-center gap-1"><Coins className="w-3 h-3" /> Credits Used</span>
+                    <span className="text-green-400">-Rs {creditsToUse.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                <div className="border-t border-white/10 pt-2 flex items-center justify-between">
+                  <span className="text-white font-semibold">{t('total')}</span>
+                  <span className="text-gold-500 font-bold text-lg">Rs {total.toFixed(2)}</span>
+                </div>
               </div>
-            </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button type="button" variant="ghost" onClick={handleCloseDialog} className="flex-1">{t('cancel')}</Button>
-              <Button type="submit" disabled={isSubmitting} className="flex-1 bg-gold-500 hover:bg-gold-600 text-black">
-                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : t('continueToPayment')}
-              </Button>
-            </div>
-          </form>
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="ghost" onClick={handleCloseDialog} className="flex-1">{t('cancel')}</Button>
+                <Button type="submit" disabled={isSubmitting} className="flex-1 bg-gold-500 hover:bg-gold-600 text-black">
+                  {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : t('continueToPayment')}
+                </Button>
+              </div>
+            </form>
         </DialogContent>
       </Dialog>
 
-      <CustomerAuth isOpen={showLoginDialog} onClose={() => setShowLoginDialog(false)} onSuccess={() => { setShowLoginDialog(false); window.location.reload(); }} />
+      {/* Login Dialog for Credits */}
+      <CustomerAuth 
+        isOpen={showLoginDialog} 
+        onClose={() => setShowLoginDialog(false)} 
+        onSuccess={() => {
+          setShowLoginDialog(false);
+          window.location.reload();
+        }}
+      />
 
       <Footer />
     </div>
