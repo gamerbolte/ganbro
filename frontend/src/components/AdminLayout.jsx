@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, FolderOpen, Star, FileText, Share2, LogOut, Home, Menu, X, HelpCircle, Bell, BookOpen, CreditCard, Ticket, Settings, Send, BarChart3, Users, ShoppingCart, Shield, Mail, Coins } from 'lucide-react';
+import { LayoutDashboard, Package, FolderOpen, Star, FileText, Share2, LogOut, Home, Menu, X, HelpCircle, Bell, BookOpen, CreditCard, Ticket, Settings, Send, BarChart3, Users, ShoppingCart, Shield, Mail, Coins, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authAPI } from '@/lib/api';
 
@@ -16,6 +16,7 @@ const navItems = [
   { path: '/admin/products', label: 'Products', icon: Package, permission: 'view_products' },
   { path: '/admin/promo-codes', label: 'Promo Codes', icon: Ticket, permission: 'view_settings' },
   { path: '/admin/credit-settings', label: 'Store Credits', icon: Coins, permission: 'view_settings' },
+  { path: '/admin/daily-reward', label: 'Daily Rewards', icon: Gift, permission: 'view_settings' },
   { path: '/admin/pricing', label: 'Pricing Settings', icon: Settings, permission: 'view_settings' },
   { path: '/admin/reviews', label: 'Reviews', icon: Star, permission: 'view_reviews' },
   { path: '/admin/faqs', label: 'FAQs', icon: HelpCircle, permission: 'view_faqs' },
