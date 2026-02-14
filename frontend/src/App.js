@@ -15,6 +15,7 @@ import FAQPage from "@/pages/FAQPage";
 import TermsPage from "@/pages/TermsPage";
 import BlogPage from "@/pages/BlogPage";
 import BlogPostPage from "@/pages/BlogPostPage";
+import DailyRewardPage from "@/pages/DailyRewardPage";
 import CustomerAccountPage from "@/pages/CustomerAccountPage";
 import OrderTrackingPage from "@/pages/OrderTrackingPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
