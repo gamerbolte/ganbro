@@ -3756,7 +3756,7 @@ async def apply_referral_code(referee_email: str, referral_code: str):
     referrer_reward = settings.get("referrer_reward", 50)
     
     # Get active multiplier
-    multiplier = await get_active_multiplier()
+    multiplier = await get_active_multiplier_value("referral")
     referee_reward = referee_reward * multiplier
     referrer_reward = referrer_reward * multiplier
     
