@@ -11,7 +11,7 @@ import axios from 'axios';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function DailyRewardPage() {
-  const { customer, refreshCustomer } = useCustomer();
+  const { customer } = useCustomer();
   const [rewardStatus, setRewardStatus] = useState(null);
   const [settings, setSettings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
