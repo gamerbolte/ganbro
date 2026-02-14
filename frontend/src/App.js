@@ -108,6 +108,7 @@ function App() {
                   <Route path="/admin/staff" element={<ProtectedRoute requiredPermission="manage_admins"><AdminStaff /></ProtectedRoute>} />
                   <Route path="/admin/newsletter" element={<ProtectedRoute requiredPermission="view_settings"><AdminNewsletter /></ProtectedRoute>} />
                   <Route path="/admin/credit-settings" element={<ProtectedRoute requiredPermission="view_settings"><AdminCreditSettings /></ProtectedRoute>} />
+                  <Route path="/admin/daily-reward" element={<ProtectedRoute requiredPermission="view_settings"><AdminDailyReward /></ProtectedRoute>} />
                 </Routes>
               </BrowserRouter>
               <Toaster position="top-right" richColors />
