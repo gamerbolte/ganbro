@@ -128,8 +128,16 @@ export default function ProductPage() {
   const taxAmount = afterDiscount * (taxPercentage / 100);
   const totalBeforeCredits = afterDiscount + serviceCharge + taxAmount;
   
-  // Calculate credits to use (max available or total, whichever is lower)
-  const creditsToUse = useCredits && customer ? Math.min(creditBalance, totalBeforeCredits) : 0;
+  // Calculate credits to use - either custom amount or max if use all
+  const getCreditsToUse = () => {
+    if (!useCredits || !customer) return 0;
+    if (customCreditAmount !== '') {
+      const customAmount = parseFloat(customCreditAmount) || 0;
+      return Math.min(customAmount, creditBalance, totalBeforeCredits);
+    }
+    return Math.min(creditBalance, totalBeforeCredits);
+  };
+  const creditsToUse = getCreditsToUse();
   const total = Math.max(0, totalBeforeCredits - creditsToUse);
 
   const handleQuantityChange = (delta) => {
