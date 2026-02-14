@@ -67,11 +67,16 @@ export default function Navbar({ notificationBarHeight = 0 }) {
               <Link
                 key={link.href}
                 to={link.href}
-                data-testid={`nav-link-${link.label.toLowerCase()}`}
-                className={`text-sm font-medium transition-colors ${
-                  isActive(link.href) ? 'text-gold-500' : 'text-white/70 hover:text-white'
+                data-testid={`nav-link-${link.label.toLowerCase().replace(' ', '-')}`}
+                className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  link.highlight 
+                    ? 'text-gold-500 hover:text-gold-400' 
+                    : isActive(link.href) 
+                      ? 'text-gold-500' 
+                      : 'text-white/70 hover:text-white'
                 }`}
               >
+                {link.icon && <link.icon className="w-4 h-4" />}
                 {link.label}
               </Link>
             ))}
