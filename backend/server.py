@@ -3892,6 +3892,9 @@ async def create_multiplier_event(event: MultiplierEvent, current_user: dict = D
     event_dict["id"] = str(uuid.uuid4())
     event_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     await db.multiplier_events.insert_one(event_dict)
+    # Remove MongoDB's _id from response
+    if "_id" in event_dict:
+        del event_dict["_id"]
     return event_dict
 
 @api_router.put("/multiplier/events/{event_id}")
