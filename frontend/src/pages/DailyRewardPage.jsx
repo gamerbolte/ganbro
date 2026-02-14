@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Gift, Flame, Calendar, Coins, Lock, CheckCircle, Star, Trophy, Users, Copy, Share2, Zap } from 'lucide-react';
+import { Gift, Flame, Calendar, Coins, Lock, CheckCircle, Star, Trophy, Users, Copy, Share2, Zap, UserPlus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export default function DailyRewardPage() {
         axios.get(`${API}/referral/settings`)
       ]);
       setSettings(settingsRes.data);
-      setActiveMultiplier(multiplierRes.data);
+      setActiveMultiplier(multiplierRes.data?.is_active ? multiplierRes.data : null);
       setReferralSettings(referralSettingsRes.data);
 
       if (customer?.email) {
@@ -58,6 +58,37 @@ export default function DailyRewardPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const copyReferralCode = () => {
+    if (referralData?.referral_code) {
+      navigator.clipboard.writeText(referralData.referral_code);
+      toast.success('Referral code copied to clipboard!');
+    }
+  };
+
+  const handleApplyReferralCode = async () => {
+    if (!referralCodeInput.trim()) {
+      toast.error('Please enter a referral code');
+      return;
+    }
+
+    if (referralData?.has_used_referral) {
+      toast.error('You have already used a referral code');
+      return;
+    }
+
+    setIsApplyingCode(true);
+    try {
+      const res = await axios.post(`${API}/referral/apply?referee_email=${encodeURIComponent(customer.email)}&referral_code=${encodeURIComponent(referralCodeInput.trim())}`);
+      toast.success(res.data.message || 'Referral code applied successfully!');
+      setReferralCodeInput('');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to apply referral code');
+    } finally {
+      setIsApplyingCode(false);
+    }
+  };
 
   const handleClaim = async () => {
     if (!customer?.email) {
