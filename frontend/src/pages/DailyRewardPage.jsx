@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Gift, Flame, Calendar, Coins, Lock, CheckCircle, Star, Trophy } from 'lucide-react';
+import { Gift, Flame, Calendar, Coins, Lock, CheckCircle, Star, Trophy, Users, Copy, Share2, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useCustomer } from '@/components/CustomerAccount';
 import CustomerAuthModal from '@/components/CustomerAuth';
@@ -18,18 +19,37 @@ export default function DailyRewardPage() {
   const [isClaiming, setIsClaiming] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [justClaimed, setJustClaimed] = useState(false);
+  
+  // Referral state
+  const [referralData, setReferralData] = useState(null);
+  const [referralSettings, setReferralSettings] = useState(null);
+  const [referralCodeInput, setReferralCodeInput] = useState('');
+  const [isApplyingCode, setIsApplyingCode] = useState(false);
+  
+  // Multiplier state
+  const [activeMultiplier, setActiveMultiplier] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const settingsRes = await axios.get(`${API}/daily-reward/settings`);
+      const [settingsRes, multiplierRes, referralSettingsRes] = await Promise.all([
+        axios.get(`${API}/daily-reward/settings`),
+        axios.get(`${API}/multiplier/active`),
+        axios.get(`${API}/referral/settings`)
+      ]);
       setSettings(settingsRes.data);
+      setActiveMultiplier(multiplierRes.data);
+      setReferralSettings(referralSettingsRes.data);
 
       if (customer?.email) {
-        const statusRes = await axios.get(`${API}/daily-reward/status?email=${encodeURIComponent(customer.email)}`);
+        const [statusRes, referralRes] = await Promise.all([
+          axios.get(`${API}/daily-reward/status?email=${encodeURIComponent(customer.email)}`),
+          axios.get(`${API}/referral/code/${encodeURIComponent(customer.email)}`)
+        ]);
         setRewardStatus(statusRes.data);
+        setReferralData(referralRes.data);
       }
     } catch (error) {
-      console.error('Error fetching daily reward data:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
