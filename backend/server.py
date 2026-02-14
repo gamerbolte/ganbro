@@ -1718,9 +1718,12 @@ async def upload_payment_screenshot(order_id: str, data: PaymentScreenshotUpload
     # Deduct store credits if customer used them
     credits_deducted = 0
     customer_email = order.get("customer_email")
-    credits_used = order.get("credits_used", 0)
+    credits_used = float(order.get("credits_used", 0) or 0)
+    credits_pending = order.get("credits_pending", False)
     
-    if credits_used > 0 and customer_email and order.get("credits_pending"):
+    logger.info(f"Order {order_id}: email={customer_email}, credits_used={credits_used}, credits_pending={credits_pending}")
+    
+    if credits_used > 0 and customer_email:
         try:
             await use_credits(customer_email, credits_used, order_id)
             credits_deducted = credits_used
