@@ -83,6 +83,7 @@ function App() {
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
+                  <Route path="/daily-reward" element={<DailyRewardPage />} />
                   <Route path="/account" element={<CustomerAccountPage />} />
                   <Route path="/track-order" element={<OrderTrackingPage />} />
 
