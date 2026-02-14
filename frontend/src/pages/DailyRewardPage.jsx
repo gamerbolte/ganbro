@@ -298,6 +298,114 @@ export default function DailyRewardPage() {
                   </p>
                 </div>
               )}
+
+              {/* Active Multiplier Banner */}
+              {activeMultiplier && (
+                <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-500/50 rounded-xl p-6 mt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center animate-pulse">
+                        <Zap className="w-6 h-6 text-black" />
+                      </div>
+                      <div>
+                        <p className="text-amber-500 font-bold text-lg">{activeMultiplier.name}</p>
+                        <p className="text-white/60 text-sm">Limited Time Event Active!</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-4xl font-bold text-amber-500">{activeMultiplier.multiplier}x</p>
+                      <p className="text-white/40 text-xs">Reward Multiplier</p>
+                    </div>
+                  </div>
+                  <p className="text-white/50 text-xs mt-3 text-center">
+                    All rewards are multiplied during this event!
+                  </p>
+                </div>
+              )}
+
+              {/* Referral Section */}
+              {referralSettings?.is_enabled && (
+                <div className="bg-zinc-900 border border-white/10 rounded-xl p-6 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-6 h-6 text-blue-500" />
+                    <h2 className="font-heading text-xl font-bold text-white">Refer Friends & Earn</h2>
+                  </div>
+
+                  {/* Your Referral Code */}
+                  <div className="bg-black/50 rounded-lg p-4 mb-4">
+                    <p className="text-white/60 text-sm mb-2">Your Referral Code</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-zinc-800 border border-white/20 rounded-lg px-4 py-3 font-mono text-lg text-gold-500 tracking-wider">
+                        {referralData?.referral_code || '--------'}
+                      </div>
+                      <Button
+                        onClick={copyReferralCode}
+                        variant="outline"
+                        className="border-gold-500 text-gold-500 hover:bg-gold-500/10"
+                        data-testid="copy-referral-btn"
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy
+                      </Button>
+                    </div>
+                    <p className="text-white/40 text-xs mt-2">
+                      Share this code with friends to earn Rs {referralSettings.referrer_reward} when they sign up!
+                    </p>
+                  </div>
+
+                  {/* Referral Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-black/30 rounded-lg p-4 text-center">
+                      <p className="text-3xl font-bold text-green-500">{referralData?.referral_count || 0}</p>
+                      <p className="text-white/40 text-sm">Friends Referred</p>
+                    </div>
+                    <div className="bg-black/30 rounded-lg p-4 text-center">
+                      <p className="text-3xl font-bold text-gold-500">Rs {referralData?.total_earned || 0}</p>
+                      <p className="text-white/40 text-sm">Credits Earned</p>
+                    </div>
+                  </div>
+
+                  {/* Apply Referral Code */}
+                  {!referralData?.has_used_referral && (
+                    <div className="border-t border-white/10 pt-4">
+                      <p className="text-white/60 text-sm mb-2 flex items-center gap-2">
+                        <UserPlus className="w-4 h-4" />
+                        Have a friend's code? Enter it below:
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={referralCodeInput}
+                          onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                          placeholder="Enter referral code"
+                          className="bg-black border-white/20 font-mono uppercase tracking-wider"
+                          maxLength={10}
+                          data-testid="referral-code-input"
+                        />
+                        <Button
+                          onClick={handleApplyReferralCode}
+                          disabled={isApplyingCode || !referralCodeInput.trim()}
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          data-testid="apply-referral-btn"
+                        >
+                          {isApplyingCode ? 'Applying...' : 'Apply'}
+                        </Button>
+                      </div>
+                      <p className="text-white/40 text-xs mt-2">
+                        Get Rs {referralSettings.referee_reward} credits when you use a friend's code!
+                      </p>
+                    </div>
+                  )}
+
+                  {referralData?.has_used_referral && (
+                    <div className="border-t border-white/10 pt-4">
+                      <div className="flex items-center gap-2 text-green-500">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="text-sm">You've already used a referral code</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 
