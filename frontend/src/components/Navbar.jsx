@@ -28,9 +28,8 @@ export default function Navbar({ notificationBarHeight = 0 }) {
 
   const navLinks = [
     { href: '/', label: 'Home' },
-    { href: '/daily-reward', label: 'Daily Reward', icon: Gift, highlight: true },
+    { href: '/daily-reward', label: 'Daily Rewards', icon: Gift, highlight: true },
     { href: '/about', label: 'About' },
-    { href: '/blog', label: 'Blog' },
   ];
 
   const isActive = (path) => location.pathname === path;
