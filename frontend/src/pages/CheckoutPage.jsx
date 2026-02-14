@@ -36,6 +36,7 @@ export default function CheckoutPage() {
   // Store Credits
   const [creditBalance, setCreditBalance] = useState(0);
   const [useCredits, setUseCredits] = useState(false);
+  const [customCreditAmount, setCustomCreditAmount] = useState('');
   const [creditSettings, setCreditSettings] = useState({ cashback_percentage: 5, is_enabled: true });
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
