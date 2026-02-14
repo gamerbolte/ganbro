@@ -38,6 +38,7 @@ import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminStaff from "@/pages/admin/AdminStaff";
 import AdminNewsletter from "@/pages/admin/AdminNewsletter";
 import AdminCreditSettings from "@/pages/admin/AdminCreditSettings";
+import AdminDailyReward from "@/pages/admin/AdminDailyReward";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import "@/App.css";
 
