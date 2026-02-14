@@ -3467,6 +3467,27 @@ def get_nepal_datetime():
     nepal_offset = timedelta(hours=5, minutes=45)
     return datetime.now(timezone.utc) + nepal_offset
 
+async def get_active_multiplier_value(event_type: str = None) -> float:
+    """Get the current active multiplier value"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    query = {
+        "is_active": True,
+        "start_time": {"$lte": now},
+        "end_time": {"$gte": now}
+    }
+    
+    events = await db.multiplier_events.find(query).to_list(10)
+    
+    max_multiplier = 1.0
+    for event in events:
+        applies_to = event.get("applies_to", ["daily_reward", "cashback", "referral"])
+        if event_type is None or event_type in applies_to:
+            if event.get("multiplier", 1) > max_multiplier:
+                max_multiplier = event.get("multiplier", 1)
+    
+    return max_multiplier
+
 @api_router.get("/daily-reward/settings")
 async def get_daily_reward_settings():
     """Get daily reward settings (public)"""
