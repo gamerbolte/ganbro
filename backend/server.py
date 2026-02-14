@@ -3442,6 +3442,175 @@ async def get_all_customers(current_user: dict = Depends(get_current_user)):
     
     return customers
 
+# ==================== DAILY REWARDS ====================
+
+class DailyRewardSettings(BaseModel):
+    is_enabled: bool = True
+    reward_amount: float = 10.0  # Credits to award daily
+    streak_bonus_enabled: bool = True
+    streak_milestones: dict = {
+        "7": 50,   # 7 day streak bonus
+        "30": 200  # 30 day streak bonus
+    }
+
+def get_nepal_date():
+    """Get current date in Nepal timezone (UTC+5:45)"""
+    nepal_offset = timedelta(hours=5, minutes=45)
+    nepal_time = datetime.now(timezone.utc) + nepal_offset
+    return nepal_time.date().isoformat()
+
+def get_nepal_datetime():
+    """Get current datetime in Nepal timezone (UTC+5:45)"""
+    nepal_offset = timedelta(hours=5, minutes=45)
+    return datetime.now(timezone.utc) + nepal_offset
+
+@api_router.get("/daily-reward/settings")
+async def get_daily_reward_settings():
+    """Get daily reward settings (public)"""
+    settings = await db.daily_reward_settings.find_one({"id": "main"}, {"_id": 0})
+    if not settings:
+        settings = {
+            "id": "main",
+            "is_enabled": True,
+            "reward_amount": 10.0,
+            "streak_bonus_enabled": True,
+            "streak_milestones": {"7": 50, "30": 200}
+        }
+    return settings
+
+@api_router.put("/daily-reward/settings")
+async def update_daily_reward_settings(settings: DailyRewardSettings, current_user: dict = Depends(get_current_user)):
+    """Update daily reward settings (admin only)"""
+    settings_dict = settings.model_dump()
+    settings_dict["id"] = "main"
+    await db.daily_reward_settings.update_one({"id": "main"}, {"$set": settings_dict}, upsert=True)
+    return settings_dict
+
+@api_router.get("/daily-reward/status")
+async def get_daily_reward_status(email: str):
+    """Check if customer can claim daily reward and their streak"""
+    settings = await db.daily_reward_settings.find_one({"id": "main"})
+    if not settings or not settings.get("is_enabled", True):
+        return {"can_claim": False, "reason": "Daily rewards are disabled", "streak": 0}
+    
+    customer = await db.customers.find_one({"email": email})
+    if not customer:
+        return {"can_claim": False, "reason": "Customer not found", "streak": 0}
+    
+    today = get_nepal_date()
+    last_claim_date = customer.get("last_daily_reward_date")
+    current_streak = customer.get("daily_reward_streak", 0)
+    
+    # Check if already claimed today
+    if last_claim_date == today:
+        return {
+            "can_claim": False, 
+            "reason": "Already claimed today", 
+            "streak": current_streak,
+            "last_claim": last_claim_date,
+            "reward_amount": settings.get("reward_amount", 10),
+            "next_reset": get_nepal_date()  # Resets at 12 AM Nepal time
+        }
+    
+    # Check if streak should be reset (missed a day)
+    if last_claim_date:
+        yesterday = (get_nepal_datetime() - timedelta(days=1)).date().isoformat()
+        if last_claim_date != yesterday:
+            current_streak = 0  # Reset streak if missed a day
+    
+    return {
+        "can_claim": True,
+        "streak": current_streak,
+        "next_streak": current_streak + 1,
+        "reward_amount": settings.get("reward_amount", 10),
+        "streak_bonus_enabled": settings.get("streak_bonus_enabled", True),
+        "streak_milestones": settings.get("streak_milestones", {"7": 50, "30": 200}),
+        "last_claim": last_claim_date
+    }
+
+@api_router.post("/daily-reward/claim")
+async def claim_daily_reward(email: str):
+    """Claim daily login reward"""
+    settings = await db.daily_reward_settings.find_one({"id": "main"})
+    if not settings or not settings.get("is_enabled", True):
+        raise HTTPException(status_code=400, detail="Daily rewards are disabled")
+    
+    customer = await db.customers.find_one({"email": email})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    today = get_nepal_date()
+    last_claim_date = customer.get("last_daily_reward_date")
+    
+    # Check if already claimed today
+    if last_claim_date == today:
+        raise HTTPException(status_code=400, detail="Already claimed today")
+    
+    # Calculate streak
+    current_streak = customer.get("daily_reward_streak", 0)
+    if last_claim_date:
+        yesterday = (get_nepal_datetime() - timedelta(days=1)).date().isoformat()
+        if last_claim_date == yesterday:
+            current_streak += 1  # Continue streak
+        else:
+            current_streak = 1  # Reset streak
+    else:
+        current_streak = 1  # First claim
+    
+    # Calculate reward
+    base_reward = settings.get("reward_amount", 10)
+    streak_bonus = 0
+    streak_milestone_reached = None
+    
+    # Check for streak milestones
+    if settings.get("streak_bonus_enabled", True):
+        milestones = settings.get("streak_milestones", {"7": 50, "30": 200})
+        for days, bonus in milestones.items():
+            if current_streak == int(days):
+                streak_bonus = bonus
+                streak_milestone_reached = int(days)
+                break
+    
+    total_reward = base_reward + streak_bonus
+    
+    # Update customer
+    current_balance = customer.get("credit_balance", 0)
+    new_balance = current_balance + total_reward
+    
+    await db.customers.update_one(
+        {"email": email},
+        {"$set": {
+            "credit_balance": new_balance,
+            "last_daily_reward_date": today,
+            "daily_reward_streak": current_streak
+        }}
+    )
+    
+    # Log the credit transaction
+    credit_log = {
+        "id": str(uuid.uuid4()),
+        "customer_id": customer.get("id"),
+        "customer_email": email,
+        "amount": total_reward,
+        "reason": f"Daily login reward (Day {current_streak})" + (f" + {streak_milestone_reached}-day streak bonus!" if streak_bonus > 0 else ""),
+        "balance_before": current_balance,
+        "balance_after": new_balance,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "type": "daily_reward"
+    }
+    await db.credit_logs.insert_one(credit_log)
+    
+    return {
+        "success": True,
+        "base_reward": base_reward,
+        "streak_bonus": streak_bonus,
+        "total_reward": total_reward,
+        "new_balance": new_balance,
+        "streak": current_streak,
+        "streak_milestone_reached": streak_milestone_reached,
+        "message": f"You earned Rs {total_reward} credits!" + (f" 🎉 {streak_milestone_reached}-day streak bonus!" if streak_bonus > 0 else "")
+    }
+
 # ==================== ROOT ====================
 
 @api_router.get("/")
