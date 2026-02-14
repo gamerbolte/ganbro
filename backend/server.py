@@ -3716,10 +3716,14 @@ async def get_referral_code(email: str):
     for ref in referrals:
         total_earned += ref.get("referrer_reward", 0)
     
+    # Check if user has already used a referral code
+    has_used_referral = customer.get("referred_by") is not None
+    
     return {
         "referral_code": referral_code,
         "referral_count": referral_count,
-        "total_earned": total_earned
+        "total_earned": total_earned,
+        "has_used_referral": has_used_referral
     }
 
 @api_router.post("/referral/apply")
