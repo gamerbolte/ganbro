@@ -3843,27 +3843,6 @@ class MultiplierEvent(BaseModel):
     applies_to: List[str] = ["daily_reward", "cashback", "referral"]  # What it applies to
     is_active: bool = True
 
-async def get_active_multiplier(event_type: str = None) -> float:
-    """Get the current active multiplier"""
-    now = datetime.now(timezone.utc).isoformat()
-    
-    query = {
-        "is_active": True,
-        "start_time": {"$lte": now},
-        "end_time": {"$gte": now}
-    }
-    
-    events = await db.multiplier_events.find(query).to_list(10)
-    
-    max_multiplier = 1.0
-    for event in events:
-        applies_to = event.get("applies_to", ["daily_reward", "cashback", "referral"])
-        if event_type is None or event_type in applies_to:
-            if event.get("multiplier", 1) > max_multiplier:
-                max_multiplier = event.get("multiplier", 1)
-    
-    return max_multiplier
-
 @api_router.get("/multiplier/active")
 async def get_active_multiplier_event():
     """Get current active multiplier event (public)"""
