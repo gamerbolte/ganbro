@@ -3582,7 +3582,11 @@ async def claim_daily_reward(email: str):
                 streak_milestone_reached = int(days)
                 break
     
-    total_reward = base_reward + streak_bonus
+    # Apply multiplier
+    multiplier = await get_active_multiplier_value("daily_reward")
+    base_reward_multiplied = base_reward * multiplier
+    streak_bonus_multiplied = streak_bonus * multiplier
+    total_reward = base_reward_multiplied + streak_bonus_multiplied
     
     # Update customer
     current_balance = customer.get("credit_balance", 0)
@@ -3598,28 +3602,31 @@ async def claim_daily_reward(email: str):
     )
     
     # Log the credit transaction
+    multiplier_text = f" ({multiplier}x multiplier!)" if multiplier > 1 else ""
     credit_log = {
         "id": str(uuid.uuid4()),
         "customer_id": customer.get("id"),
         "customer_email": email,
         "amount": total_reward,
-        "reason": f"Daily login reward (Day {current_streak})" + (f" + {streak_milestone_reached}-day streak bonus!" if streak_bonus > 0 else ""),
+        "reason": f"Daily login reward (Day {current_streak})" + (f" + {streak_milestone_reached}-day streak bonus!" if streak_bonus > 0 else "") + multiplier_text,
         "balance_before": current_balance,
         "balance_after": new_balance,
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "type": "daily_reward"
+        "type": "daily_reward",
+        "multiplier": multiplier
     }
     await db.credit_logs.insert_one(credit_log)
     
     return {
         "success": True,
-        "base_reward": base_reward,
-        "streak_bonus": streak_bonus,
+        "base_reward": base_reward_multiplied,
+        "streak_bonus": streak_bonus_multiplied,
         "total_reward": total_reward,
         "new_balance": new_balance,
         "streak": current_streak,
         "streak_milestone_reached": streak_milestone_reached,
-        "message": f"You earned Rs {total_reward} credits!" + (f" 🎉 {streak_milestone_reached}-day streak bonus!" if streak_bonus > 0 else "")
+        "multiplier": multiplier,
+        "message": f"You earned Rs {total_reward} credits!" + (f" 🎉 {streak_milestone_reached}-day streak bonus!" if streak_bonus > 0 else "") + (f" 🔥 {multiplier}x multiplier active!" if multiplier > 1 else "")
     }
 
 # ==================== REFERRAL PROGRAM ====================
