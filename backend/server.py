@@ -3490,7 +3490,15 @@ async def update_daily_reward_settings(settings: DailyRewardSettings, current_us
 async def get_daily_reward_status(email: str):
     """Check if customer can claim daily reward and their streak"""
     settings = await db.daily_reward_settings.find_one({"id": "main"})
-    if not settings or not settings.get("is_enabled", True):
+    if not settings:
+        settings = {
+            "is_enabled": True,
+            "reward_amount": 10.0,
+            "streak_bonus_enabled": True,
+            "streak_milestones": {"7": 50, "30": 200}
+        }
+    
+    if not settings.get("is_enabled", True):
         return {"can_claim": False, "reason": "Daily rewards are disabled", "streak": 0}
     
     customer = await db.customers.find_one({"email": email})
