@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, User } from 'lucide-react';
+import { Menu, X, Search, User, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartSidebar } from '@/components/Cart';
 import { CustomerAccountSidebar } from '@/components/CustomerAccount';
@@ -28,6 +28,7 @@ export default function Navbar({ notificationBarHeight = 0 }) {
 
   const navLinks = [
     { href: '/', label: 'Home' },
+    { href: '/daily-reward', label: 'Daily Reward', icon: Gift, highlight: true },
     { href: '/about', label: 'About' },
     { href: '/blog', label: 'Blog' },
   ];
